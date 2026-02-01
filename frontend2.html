@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dempsey's HR - Modern Interface</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-purple: #6B2C91;
+            --primary-magenta: #C72C91;
+            --cyan: #00D9FF;
+            --pink: #FF3D9A;
+            --neon-green: #00FF94;
+            --deep-purple: #1A0B2E;
+            --darker-purple: #0D0520;
+            --glow-cyan: rgba(0, 217, 255, 0.3);
+            --glow-pink: rgba(255, 61, 154, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(135deg, var(--darker-purple) 0%, var(--deep-purple) 50%, #2D1B4E 100%);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Animated gradient orbs in background */
+        .background-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float-orb 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--cyan) 0%, transparent 70%);
+            top: -10%;
+            left: -10%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--pink) 0%, transparent 70%);
+            bottom: -15%;
+            right: -15%;
+            animation-delay: 5s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--primary-magenta) 0%, transparent 70%);
+            top: 40%;
+            left: 60%;
+            animation-delay: 10s;
+        }
+
+        @keyframes float-orb {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(40px, 40px) scale(1.05); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header with gradient text */
+        .header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-container {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-mark {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--pink) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 40px var(--glow-cyan), 0 0 80px var(--glow-pink);
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { 
+                box-shadow: 0 0 40px var(--glow-cyan), 0 0 80px var(--glow-pink);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 60px var(--glow-cyan), 0 0 120px var(--glow-pink);
+                transform: scale(1.05);
+            }
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--pink) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0.5rem;
+            font-weight: 400;
+        }
+
+        /* Main layout with glassmorphism */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+            animation: fadeIn 1.2s ease-out 0.3s both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Glassmorphism sidebar */
+        .sidebar {
+            background: linear-gradient(135deg, 
+                rgba(0, 217, 255, 0.1) 0%, 
+                rgba(255, 61, 154, 0.1) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.1), 0 0 20px var(--glow-cyan);
+        }
+
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1.125rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--pink) 100%);
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 217, 255, 0.4), 0 0 40px var(--glow-cyan);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--cyan);
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            margin: 2rem 0;
+        }
+
+        .quick-questions h4 {
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .question-chip {
+            display: block;
+            width: 100%;
+            padding: 0.875rem 1.125rem;
+            margin-bottom: 0.625rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 0.875rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 400;
+        }
+
+        .question-chip:hover {
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--pink) 100%);
+            border-color: transparent;
+            transform: translateX(6px);
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Chat area with gradient border */
+        .chat-area {
+            background: linear-gradient(135deg, 
+                rgba(0, 217, 255, 0.05) 0%, 
+                rgba(255, 61, 154, 0.05) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            min-height: 650px;
+            position: relative;
+        }
+
+        .chat-area::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--cyan), var(--pink));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 2rem;
+            padding-right: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            animation: messageSlide 0.5s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(15px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .message-bot {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 1.25rem 1.5rem;
+            border-radius: 20px;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        .message-user .message-content {
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--pink) 100%);
+            color: white;
+            border-bottom-right-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .message-bot .message-content {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 0.6875rem;
+            opacity: 0.6;
+            margin-top: 0.5rem;
+            font-weight: 400;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .chat-input-area textarea {
+            flex: 1;
+            padding: 1.125rem 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            font-size: 1rem;
+            font-family: 'Space Grotesk', sans-serif;
+            resize: none;
+            min-height: 56px;
+            max-height: 120px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            line-height: 1.6;
+        }
+
+        .chat-input-area textarea:focus {
+            outline: none;
+            border-color: var(--cyan);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(0, 217, 255, 0.1), 0 0 20px var(--glow-cyan);
+        }
+
+        .chat-input-area textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-send {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--pink) 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 217, 255, 0.3);
+        }
+
+        .btn-send:hover:not(:disabled) {
+            transform: translateY(-3px) rotate(15deg);
+            box-shadow: 0 8px 30px rgba(0, 217, 255, 0.5), 0 0 40px var(--glow-cyan);
+        }
+
+        .btn-send:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+            filter: drop-shadow(0 0 20px var(--glow-cyan));
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Typing indicator with gradient */
+        .typing-indicator {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            border-bottom-left-radius: 4px;
+            width: fit-content;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, var(--cyan), var(--pink));
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+            box-shadow: 0 0 10px var(--glow-cyan);
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-10px); opacity: 1; }
+        }
+
+        /* Status badge with neon effect */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.625rem 1.125rem;
+            background: rgba(0, 255, 148, 0.1);
+            border: 1px solid var(--neon-green);
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--neon-green);
+            margin-top: 1rem;
+            box-shadow: 0 0 20px rgba(0, 255, 148, 0.2);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            animation: blink 2s infinite;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Download button */
+        .download-btn {
+            display: inline-block;
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, var(--neon-green) 0%, var(--cyan) 100%);
+            color: var(--darker-purple);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 255, 148, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 255, 148, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* Scrollbar */
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--cyan), var(--pink));
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function DempseyHRApp() {
+            const [employeeId, setEmployeeId] = useState('');
+            const [firstName, setFirstName] = useState('');
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [messages, setMessages] = useState([]);
+            const [inputMessage, setInputMessage] = useState('');
+            const [isTyping, setIsTyping] = useState(false);
+            const messagesEndRef = useRef(null);
+
+            const scrollToBottom = () => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            };
+
+            useEffect(() => {
+                scrollToBottom();
+            }, [messages]);
+
+            const quickQuestions = [
+                "What's my salary?",
+                "How many days off do I have?",
+                "What is my bonus percentage?",
+                "Can I get my W-2?",
+                "What team am I on?"
+            ];
+
+            const handleLogin = () => {
+                if (employeeId || firstName) {
+                    setIsLoggedIn(true);
+                    setMessages([{
+                        type: 'bot',
+                        text: `Welcome to Dempsey's HR, ${firstName || employeeId}. I'm here to help you find the information you need. How may I assist you today?`,
+                        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                    }]);
+                }
+            };
+
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setEmployeeId('');
+                setFirstName('');
+                setMessages([]);
+                setInputMessage('');
+            };
+
+            const askBackend = async (question) => {
+                try {
+                    const response = await fetch('http://localhost:8080/api/ask', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            question: question,
+                            employee_id: employeeId || undefined,
+                            first_name: firstName || undefined,
+                        }),
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        return {
+                            text: data.answer,
+                            downloadUrl: data.download_url || null,
+                            fileType: data.file_type || null
+                        };
+                    } else {
+                        return {
+                            text: `I apologize, but I encountered an issue: ${data.error}`,
+                            downloadUrl: null
+                        };
+                    }
+                } catch (error) {
+                    return {
+                        text: "I'm having trouble connecting to the system. Please ensure the backend server is running.",
+                        downloadUrl: null
+                    };
+                }
+            };
+
+            const handleSendMessage = async (message = inputMessage) => {
+                if (!message.trim()) return;
+
+                const userMessage = {
+                    type: 'user',
+                    text: message,
+                    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                };
+
+                setMessages(prev => [...prev, userMessage]);
+                setInputMessage('');
+                setIsTyping(true);
+
+                const response = await askBackend(message);
+
+                setIsTyping(false);
+                const botMessage = {
+                    type: 'bot',
+                    text: response.text,
+                    downloadUrl: response.downloadUrl,
+                    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                };
+
+                setMessages(prev => [...prev, botMessage]);
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            };
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <div className="logo-container">
+                            <div className="logo-mark">🚀</div>
+                            <div>
+                                <h1>Dempsey's HR</h1>
+                                <p className="subtitle">Powered by AI • Designed for Excellence</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="app-layout">
+                        <div className="sidebar">
+                            {!isLoggedIn ? (
+                                <div className="employee-login">
+                                    <h3 className="section-title">Access Portal</h3>
+                                    <div className="input-group">
+                                        <label>Employee ID</label>
+                                        <input
+                                            type="text"
+                                            placeholder="EMP001"
+                                            value={employeeId}
+                                            onChange={(e) => setEmployeeId(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Or First Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="John"
+                                            value={firstName}
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                        />
+                                    </div>
+                                    <button className="btn btn-primary" onClick={handleLogin}>
+                                        Launch
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="employee-login">
+                                        <h3 className="section-title">Active Session</h3>
+                                        <div className="status-badge">
+                                            <span className="status-dot"></span>
+                                            {firstName || employeeId}
+                                        </div>
+                                        <button className="btn btn-secondary" onClick={handleLogout} style={{ marginTop: '1.25rem' }}>
+                                            Switch User
+                                        </button>
+                                    </div>
+                                    <div className="divider"></div>
+                                    <div className="quick-questions">
+                                        <h4>Quick Access</h4>
+                                        {quickQuestions.map((q, i) => (
+                                            <button
+                                                key={i}
+                                                className="question-chip"
+                                                onClick={() => handleSendMessage(q)}
+                                            >
+                                                {q}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="chat-area">
+                            <div className="messages">
+                                {messages.length === 0 && !isLoggedIn ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">💬</div>
+                                        <h3>Welcome to Dempsey's HR</h3>
+                                        <p>Access the portal to begin your conversation</p>
+                                    </div>
+                                ) : (
+                                    messages.map((msg, idx) => (
+                                        <div key={idx} className={`message message-${msg.type}`}>
+                                            <div className="message-content">
+                                                {msg.text}
+                                                {msg.downloadUrl && (
+                                                    <div>
+                                                        <a 
+                                                            href={`http://localhost:8080${msg.downloadUrl}`}
+                                                            download
+                                                            className="download-btn"
+                                                        >
+                                                            📄 Download W-2
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                <div className="message-time">{msg.time}</div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                {isTyping && (
+                                    <div className="message message-bot">
+                                        <div className="typing-indicator">
+                                            <div className="typing-dot"></div>
+                                            <div className="typing-dot"></div>
+                                            <div className="typing-dot"></div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {isLoggedIn && (
+                                <div className="chat-input-area">
+                                    <textarea
+                                        placeholder="Type your message..."
+                                        value={inputMessage}
+                                        onChange={(e) => setInputMessage(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                    />
+                                    <button
+                                        className="btn-send"
+                                        onClick={() => handleSendMessage()}
+                                        disabled={!inputMessage.trim() || isTyping}
+                                    >
+                                        ↑
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<DempseyHRApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

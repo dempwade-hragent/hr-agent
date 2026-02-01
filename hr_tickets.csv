@@ -1,0 +1,31 @@
+Ticket ID,Employee Name,Employee ID,Date Submitted,Category,Status,Resolution Days
+1,Thomas,1,2026-01-15,PTO Request,Resolved,2
+2,Sarah,5,2026-01-16,Location Change,Resolved,5
+3,Michael,12,2026-01-17,PTO Request,Resolved,1
+4,Jennifer,8,2026-01-18,Salary Inquiry,Resolved,3
+5,David,23,2026-01-19,Remote Work Request,Pending,0
+6,Lisa,34,2026-01-20,PTO Request,Resolved,2
+7,James,45,2026-01-21,Team Change,Resolved,4
+8,Maria,56,2026-01-22,PTO Request,Resolved,1
+9,Robert,67,2026-01-23,Location Change,Pending,0
+10,Patricia,78,2026-01-24,Bonus Inquiry,Resolved,2
+11,John,89,2026-01-25,PTO Request,Resolved,1
+12,Linda,90,2026-01-26,Remote Work Request,Resolved,6
+13,William,101,2026-01-27,PTO Request,Resolved,2
+14,Barbara,112,2026-01-28,W-2 Request,Resolved,1
+15,Richard,123,2026-01-29,PTO Request,Resolved,1
+16,Susan,134,2026-01-30,Location Change,Pending,0
+17,Joseph,145,2026-01-08,PTO Request,Resolved,2
+18,Jessica,156,2026-01-09,Salary Inquiry,Resolved,4
+19,Thomas,167,2026-01-10,Remote Work Request,Resolved,5
+20,Karen,178,2026-01-11,PTO Request,Resolved,1
+21,Charles,189,2026-01-12,Team Change,Resolved,3
+22,Nancy,190,2026-01-13,PTO Request,Resolved,2
+23,Daniel,201,2026-01-14,Bonus Inquiry,Resolved,2
+24,Betty,212,2026-01-22,PTO Request,Resolved,1
+25,Matthew,223,2026-01-23,Location Change,Resolved,7
+26,Dorothy,234,2026-01-24,PTO Request,Resolved,1
+27,Mark,245,2026-01-25,Remote Work Request,Pending,0
+28,Lisa,256,2026-01-26,PTO Request,Resolved,2
+29,Donald,267,2026-01-27,Salary Inquiry,Resolved,3
+30,Sandra,278,2026-01-28,PTO Request,Resolved,1

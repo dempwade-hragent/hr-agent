@@ -1,0 +1,5 @@
+Plan Name,Plan Type,Monthly Cost Employee,Monthly Cost Family,Deductible Individual,Deductible Family,Out of Pocket Max Individual,Out of Pocket Max Family,Coverage Details
+Blue Shield PPO Gold,PPO,$250,$650,$500,$1000,$3000,$6000,"Nationwide network, No referrals needed, Covers 80% after deductible"
+Kaiser HMO Silver,HMO,$150,$400,$1000,$2000,$5000,$10000,"Regional network, Requires referrals, Covers 70% after deductible"
+Aetna HDHP Bronze,HDHP,$75,$200,$3000,$6000,$6000,$12000,"HSA eligible, High deductible, Covers 60% after deductible, Preventive care free"
+Cigna PPO Platinum,PPO,$400,$1000,$250,$500,$2000,$4000,"Premium coverage, Low deductible, Covers 90% after deductible, Specialist access"

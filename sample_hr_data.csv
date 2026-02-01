@@ -1,0 +1,7 @@
+First Name,Gender,Start Date,Last Login Time,Salary,Bonus %,Senior Management,Team,Days Off Remaining,Town,EmployeeID
+John,Male,2020-01-15,2024-01-28 14:30,85000,10,False,Engineering,12,San Francisco,EMP001
+Sarah,Female,2019-03-22,2024-01-29 09:15,95000,15,True,Product,8,New York,EMP002
+Michael,Male,2021-06-10,2024-01-28 16:45,72000,8,False,Engineering,15,San Francisco,EMP003
+Emily,Female,2018-11-05,2024-01-29 11:20,110000,20,True,Sales,5,Remote,EMP004
+David,Male,2022-02-14,2024-01-28 13:00,68000,7,False,Marketing,18,Austin,EMP005
+Lisa,Female,2020-09-30,2024-01-29 10:30,88000,12,False,Product,10,New York,EMP006

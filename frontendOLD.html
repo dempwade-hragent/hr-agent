@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dempsey's HR - Your Serene HR Companion</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #5B8C85;
+            --primary-light: #7BA89F;
+            --primary-dark: #486B65;
+            --secondary: #C9ADA7;
+            --accent: #E8DED2;
+            --accent-soft: #F5F1ED;
+            --bg-main: #F9F7F4;
+            --bg-card: rgba(255, 255, 255, 0.75);
+            --text-primary: #3A3A3A;
+            --text-secondary: #7D7D7D;
+            --text-light: #A8A8A8;
+            --border: rgba(91, 140, 133, 0.15);
+            --success: #6B9080;
+            --shadow-soft: 0 8px 32px rgba(91, 140, 133, 0.08);
+            --shadow-medium: 0 12px 48px rgba(91, 140, 133, 0.12);
+            --shadow-ambient: 0 20px 60px rgba(91, 140, 133, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Serene animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(201, 173, 167, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(91, 140, 133, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(232, 222, 210, 0.05) 0%, transparent 50%);
+            animation: breathe 15s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        /* Floating botanical elements */
+        .botanical-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .leaf {
+            position: absolute;
+            opacity: 0.04;
+            font-size: 60px;
+            animation: float-gentle 25s infinite ease-in-out;
+        }
+
+        .leaf:nth-child(1) { left: 10%; top: 10%; animation-delay: 0s; }
+        .leaf:nth-child(2) { right: 15%; top: 25%; animation-delay: 5s; font-size: 80px; }
+        .leaf:nth-child(3) { left: 70%; top: 60%; animation-delay: 10s; font-size: 50px; }
+        .leaf:nth-child(4) { right: 30%; bottom: 15%; animation-delay: 15s; }
+        .leaf:nth-child(5) { left: 25%; bottom: 30%; animation-delay: 20s; font-size: 70px; }
+
+        @keyframes float-gentle {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, -20px) rotate(5deg); }
+            50% { transform: translate(0, -40px) rotate(-5deg); }
+            75% { transform: translate(-20px, -20px) rotate(5deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Elegant header */
+        .header {
+            padding: 4rem 0 3rem;
+            text-align: center;
+            animation: fadeInDown 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-container {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .logo-mark {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(10px);
+            animation: gentle-pulse 4s ease-in-out infinite;
+            position: relative;
+        }
+
+        .logo-mark::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            opacity: 0.2;
+            animation: ripple 3s ease-out infinite;
+        }
+
+        @keyframes gentle-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 0.2; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3.5rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 0.03em;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Main layout */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 2.5rem;
+            margin: 2rem 0 4rem;
+            animation: fadeIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Sidebar - frosted glass effect */
+        .sidebar {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border);
+            position: sticky;
+            top: 2rem;
+            height: fit-content;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            letter-spacing: 0.01em;
+        }
+
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-bottom: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            font-size: 1rem;
+            font-family: 'Lato', sans-serif;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            background: white;
+            color: var(--text-primary);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(91, 140, 133, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .input-group input::placeholder {
+            color: var(--text-light);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1.125rem 1.5rem;
+            border: none;
+            border-radius: 16px;
+            font-size: 0.9375rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            font-family: 'Lato', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-soft);
+            border-color: var(--primary);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 2rem 0;
+        }
+
+        .quick-questions h4 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .question-chip {
+            display: block;
+            width: 100%;
+            padding: 0.875rem 1.125rem;
+            margin-bottom: 0.625rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            font-weight: 400;
+        }
+
+        .question-chip:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateX(6px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Chat area - serene and spacious */
+        .chat-area {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 3rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            min-height: 650px;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 2rem;
+            padding-right: 1rem;
+        }
+
+        .message {
+            margin-bottom: 2rem;
+            animation: messageFloat 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes messageFloat {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .message-bot {
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 1.5rem 1.75rem;
+            border-radius: 24px;
+            position: relative;
+            line-height: 1.7;
+        }
+
+        .message-user .message-content {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border-bottom-right-radius: 6px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .message-bot .message-content {
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 6px;
+        }
+
+        .message-time {
+            font-size: 0.6875rem;
+            opacity: 0.6;
+            margin-top: 0.625rem;
+            font-weight: 300;
+            letter-spacing: 0.03em;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .chat-input-area textarea {
+            flex: 1;
+            padding: 1.25rem 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 1rem;
+            font-family: 'Lato', sans-serif;
+            resize: none;
+            min-height: 60px;
+            max-height: 140px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            background: white;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .chat-input-area textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(91, 140, 133, 0.08);
+        }
+
+        .chat-input-area textarea::placeholder {
+            color: var(--text-light);
+        }
+
+        .btn-send {
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .btn-send:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-send:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 5rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4.5rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.15;
+            animation: gentle-sway 6s ease-in-out infinite;
+        }
+
+        @keyframes gentle-sway {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+
+        .empty-state h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+            font-weight: 400;
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1.25rem 1.5rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            border-bottom-left-radius: 6px;
+            width: fit-content;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: typing-gentle 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing-gentle {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.625rem 1.125rem;
+            background: rgba(107, 144, 128, 0.08);
+            border: 1px solid rgba(107, 144, 128, 0.2);
+            border-radius: 14px;
+            font-size: 0.875rem;
+            font-weight: 400;
+            color: var(--success);
+            margin-top: 1rem;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: serene-blink 3s infinite ease-in-out;
+        }
+
+        @keyframes serene-blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.9); }
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .app-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .chat-area {
+                min-height: 500px;
+            }
+        }
+
+        /* Scrollbar styling - minimal and elegant */
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 6px;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-light);
+        }
+
+        /* Subtle entrance animation for interactive elements */
+        .btn, .question-chip, input {
+            animation: subtleEntry 0.8s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+        }
+
+        .btn { animation-delay: 0.1s; }
+        .question-chip:nth-child(1) { animation-delay: 0.2s; }
+        .question-chip:nth-child(2) { animation-delay: 0.25s; }
+        .question-chip:nth-child(3) { animation-delay: 0.3s; }
+        .question-chip:nth-child(4) { animation-delay: 0.35s; }
+        .question-chip:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes subtleEntry {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="botanical-bg">
+        <div class="leaf">🌿</div>
+        <div class="leaf">🍃</div>
+        <div class="leaf">🌿</div>
+        <div class="leaf">🍃</div>
+        <div class="leaf">🌿</div>
+    </div>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        function DempseyHRApp() {
+            const [employeeId, setEmployeeId] = useState('');
+            const [firstName, setFirstName] = useState('');
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+            const [messages, setMessages] = useState([]);
+            const [inputMessage, setInputMessage] = useState('');
+            const [isTyping, setIsTyping] = useState(false);
+            const messagesEndRef = useRef(null);
+
+            const scrollToBottom = () => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            };
+
+            useEffect(() => {
+                scrollToBottom();
+            }, [messages]);
+
+            const quickQuestions = [
+                "What's my salary?",
+                "How many days off do I have?",
+                "What is my bonus percentage?",
+                "Do I work on-site or remote?",
+                "What team am I on?"
+            ];
+
+            const handleLogin = () => {
+                if (employeeId || firstName) {
+                    setIsLoggedIn(true);
+                    setMessages([{
+                        type: 'bot',
+                        text: `Welcome to Dempsey's HR, ${firstName || employeeId}. I'm here to help you find the information you need. How may I assist you today?`,
+                        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                    }]);
+                }
+            };
+
+            const handleLogout = () => {
+                setIsLoggedIn(false);
+                setEmployeeId('');
+                setFirstName('');
+                setMessages([]);
+                setInputMessage('');
+            };
+
+            const askBackend = async (question) => {
+                try {
+                    console.log('Sending request to backend:', {
+                        question,
+                        employee_id: employeeId,
+                        first_name: firstName
+                    });
+                    
+                    const response = await fetch('http://localhost:8080/api/ask', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            question: question,
+                            employee_id: employeeId || undefined,
+                            first_name: firstName || undefined,
+                        }),
+                    });
+
+                    console.log('Response status:', response.status);
+                    console.log('Response ok:', response.ok);
+                    
+                    const data = await response.json();
+                    console.log('Response data:', data);
+                    
+                    if (data.success) {
+                        return {
+                            text: data.answer,
+                            downloadUrl: data.download_url || null,
+                            fileType: data.file_type || null
+                        };
+                    } else {
+                        console.error('Backend returned error:', data.error);
+                        return {
+                            text: `I apologize, but I encountered an issue: ${data.error}`,
+                            downloadUrl: null
+                        };
+                    }
+                } catch (error) {
+                    console.error('Full error object:', error);
+                    console.error('Error name:', error.name);
+                    console.error('Error message:', error.message);
+                    return {
+                        text: "I'm having trouble connecting to the system. Please ensure the backend server is running.",
+                        downloadUrl: null
+                    };
+                }
+            };
+
+            const handleSendMessage = async (message = inputMessage) => {
+                if (!message.trim()) return;
+
+                const userMessage = {
+                    type: 'user',
+                    text: message,
+                    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                };
+
+                setMessages(prev => [...prev, userMessage]);
+                setInputMessage('');
+                setIsTyping(true);
+
+                const response = await askBackend(message);
+
+                setIsTyping(false);
+                const botMessage = {
+                    type: 'bot',
+                    text: response.text,
+                    downloadUrl: response.downloadUrl,
+                    time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                };
+
+                setMessages(prev => [...prev, botMessage]);
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            };
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <div className="logo-container">
+                            <div className="logo-mark">🌿</div>
+                            <div>
+                                <h1>Dempsey's HR</h1>
+                                <p className="subtitle">A serene space for all your HR questions</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="app-layout">
+                        <div className="sidebar">
+                            {!isLoggedIn ? (
+                                <div className="employee-login">
+                                    <h3 className="section-title">Sign In</h3>
+                                    <div className="input-group">
+                                        <label>Employee ID</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., EMP001"
+                                            value={employeeId}
+                                            onChange={(e) => setEmployeeId(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Or First Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g., John"
+                                            value={firstName}
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                        />
+                                    </div>
+                                    <button className="btn btn-primary" onClick={handleLogin}>
+                                        Begin
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="employee-login">
+                                        <h3 className="section-title">Welcome</h3>
+                                        <div className="status-badge">
+                                            <span className="status-dot"></span>
+                                            {firstName || employeeId}
+                                        </div>
+                                        <button className="btn btn-secondary" onClick={handleLogout} style={{ marginTop: '1.25rem' }}>
+                                            Switch User
+                                        </button>
+                                    </div>
+                                    <div className="divider"></div>
+                                    <div className="quick-questions">
+                                        <h4>Quick Questions</h4>
+                                        {quickQuestions.map((q, i) => (
+                                            <button
+                                                key={i}
+                                                className="question-chip"
+                                                onClick={() => handleSendMessage(q)}
+                                            >
+                                                {q}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="chat-area">
+                            <div className="messages">
+                                {messages.length === 0 && !isLoggedIn ? (
+                                    <div className="empty-state">
+                                        <div className="empty-state-icon">💬</div>
+                                        <h3>Welcome to Dempsey's HR</h3>
+                                        <p>Sign in to begin your conversation</p>
+                                    </div>
+                                ) : (
+                                    messages.map((msg, idx) => (
+                                        <div key={idx} className={`message message-${msg.type}`}>
+                                            <div className="message-content">
+                                                {msg.text}
+                                                {msg.downloadUrl && (
+                                                    <div style={{marginTop: '1rem'}}>
+                                                        <a 
+                                                            href={`http://localhost:8080${msg.downloadUrl}`}
+                                                            download
+                                                            style={{
+                                                                display: 'inline-block',
+                                                                padding: '0.75rem 1.5rem',
+                                                                background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%)',
+                                                                color: 'white',
+                                                                textDecoration: 'none',
+                                                                borderRadius: '12px',
+                                                                fontWeight: '600',
+                                                                fontSize: '0.875rem',
+                                                                transition: 'all 0.3s ease'
+                                                            }}
+                                                            onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+                                                            onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+                                                        >
+                                                            📄 Download W-2
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                <div className="message-time">{msg.time}</div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                {isTyping && (
+                                    <div className="message message-bot">
+                                        <div className="typing-indicator">
+                                            <div className="typing-dot"></div>
+                                            <div className="typing-dot"></div>
+                                            <div className="typing-dot"></div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {isLoggedIn && (
+                                <div className="chat-input-area">
+                                    <textarea
+                                        placeholder="Type your question here..."
+                                        value={inputMessage}
+                                        onChange={(e) => setInputMessage(e.target.value)}
+                                        onKeyPress={handleKeyPress}
+                                    />
+                                    <button
+                                        className="btn-send"
+                                        onClick={() => handleSendMessage()}
+                                        disabled={!inputMessage.trim() || isTyping}
+                                    >
+                                        ↑
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<DempseyHRApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
