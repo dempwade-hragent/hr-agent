@@ -89,8 +89,19 @@ except Exception as e:
 
 # Initialize W-2 Generator
 try:
-    w2_gen = W2Generator(output_dir="/Users/dempseywade/Desktop/Datadog/HRAgent/tax_documents")
-    print(f"✓ W-2 Generator initialized")
+    # Use environment variable or default to a temp directory in production
+    w2_output_dir = os.getenv('W2_OUTPUT_DIR', '/tmp/tax_documents')
+    
+    # For local dev, use the desktop path
+    local_path = "/Users/dempseywade/Desktop/Datadog/HRAgent/tax_documents"
+    if os.path.exists(os.path.dirname(local_path)):
+        w2_output_dir = local_path
+    
+    # Create directory if it doesn't exist
+    os.makedirs(w2_output_dir, exist_ok=True)
+    
+    w2_gen = W2Generator(output_dir=w2_output_dir)
+    print(f"✓ W-2 Generator initialized (output: {w2_output_dir})")
 except Exception as e:
     print(f"✗ Error initializing W-2 Generator: {e}")
     w2_gen = None
@@ -1012,16 +1023,6 @@ def serve_frontend():
 def serve_frontend_alt():
     """Alternative route for frontend"""
     return serve_frontend()
-
-
-@app.route('/hr_dashboard.html')
-def serve_hr_dashboard():
-    """Serve the HR dashboard HTML file"""
-    dashboard_path = os.path.join(os.path.dirname(__file__), 'hr_dashboard.html')
-    if os.path.exists(dashboard_path):
-        return send_file(dashboard_path)
-    else:
-        return "HR Dashboard not found", 404
 
 
 if __name__ == '__main__':
