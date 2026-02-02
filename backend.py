@@ -1030,22 +1030,6 @@ def check_hr_auth():
     return jsonify({'is_hr': is_hr})
 
 
-@app.route('/')
-def serve_frontend():
-    """Serve the main frontend HTML file"""
-    frontend_path = os.path.join(os.path.dirname(__file__), 'frontend.html')
-    if os.path.exists(frontend_path):
-        return send_file(frontend_path)
-    else:
-        return "Frontend not found", 404
-
-
-@app.route('/frontend.html')
-def serve_frontend_alt():
-    """Alternative route for frontend"""
-    return serve_frontend()
-
-
 if __name__ == '__main__':
     print("\n" + "="*60)
     print("🌿 Dempsey's HR Backend Server")
