@@ -1020,21 +1020,6 @@ def hr_login():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/hr_dashboard.html')
-def serve_hr_dashboard():
-    """Serve the HR dashboard HTML file"""
-    # Try v2 first, then fall back to regular
-    dashboard_v2_path = os.path.join(os.getcwd(), 'hr_dashboard_v2.html')
-    dashboard_path = os.path.join(os.getcwd(), 'hr_dashboard.html')
-    
-    if os.path.exists(dashboard_v2_path):
-        return send_file(dashboard_v2_path)
-    elif os.path.exists(dashboard_path):
-        return send_file(dashboard_path)
-    else:
-        return "HR Dashboard not found", 404
-
-
 @app.route('/api/hr/check-auth', methods=['GET', 'OPTIONS'])
 def check_hr_auth():
     """Check if user is authenticated as HR"""
