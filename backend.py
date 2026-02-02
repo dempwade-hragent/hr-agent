@@ -138,6 +138,37 @@ def home():
         """
 
 
+@app.route('/frontend.html')
+def serve_frontend():
+    """Serve frontend HTML"""
+    frontend_path = os.path.join(os.path.dirname(__file__), 'frontend.html')
+    if os.path.exists(frontend_path):
+        return send_file(frontend_path)
+    return "Frontend not found", 404
+
+
+@app.route('/hr_dashboard.html')
+def serve_hr_dashboard():
+    """Serve HR dashboard - tries v2 first"""
+    dashboard_v2_path = os.path.join(os.path.dirname(__file__), 'hr_dashboard_v2.html')
+    dashboard_path = os.path.join(os.path.dirname(__file__), 'hr_dashboard.html')
+    
+    if os.path.exists(dashboard_v2_path):
+        return send_file(dashboard_v2_path)
+    elif os.path.exists(dashboard_path):
+        return send_file(dashboard_path)
+    return "HR Dashboard not found", 404
+
+
+@app.route('/hr_dashboard_v2.html')
+def serve_hr_dashboard_v2():
+    """Serve HR dashboard v2"""
+    dashboard_path = os.path.join(os.path.dirname(__file__), 'hr_dashboard_v2.html')
+    if os.path.exists(dashboard_path):
+        return send_file(dashboard_path)
+    return "HR Dashboard v2 not found", 404
+
+
 @app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
     """Health check endpoint"""
@@ -992,8 +1023,13 @@ def hr_login():
 @app.route('/hr_dashboard.html')
 def serve_hr_dashboard():
     """Serve the HR dashboard HTML file"""
+    # Try v2 first, then fall back to regular
+    dashboard_v2_path = os.path.join(os.getcwd(), 'hr_dashboard_v2.html')
     dashboard_path = os.path.join(os.getcwd(), 'hr_dashboard.html')
-    if os.path.exists(dashboard_path):
+    
+    if os.path.exists(dashboard_v2_path):
+        return send_file(dashboard_v2_path)
+    elif os.path.exists(dashboard_path):
         return send_file(dashboard_path)
     else:
         return "HR Dashboard not found", 404
