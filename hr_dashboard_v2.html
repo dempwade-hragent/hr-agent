@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Dashboard - Dempsey's HR</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --datadog-purple: #632CA6;
+            --datadog-dark-purple: #4B2380;
+            --datadog-light-purple: #8B5FBF;
+            --datadog-pink: #F653A6;
+            --datadog-light-pink: #FF7AC6;
+            --datadog-accent: #00D4AA;
+            --deep-purple: #1A0B2E;
+            --darker-purple: #0D0520;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: #1E1438;
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--datadog-accent);
+            font-size: 1.125rem;
+        }
+
+        /* Login Screen */
+        .login-container {
+            max-width: 500px;
+            margin: 4rem auto;
+            padding: 3rem;
+            background: #2A1F47;
+            border-radius: 20px;
+            border: 1px solid rgba(99, 44, 166, 0.2);
+            border-top: 3px solid var(--datadog-purple);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Space Grotesk', sans-serif;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--datadog-purple);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(99, 44, 166, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1.125rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .btn-primary {
+            background: var(--datadog-purple);
+            color: white;
+            box-shadow: 0 2px 8px rgba(99, 44, 166, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--datadog-dark-purple);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 44, 166, 0.4);
+        }
+
+        .error-message {
+            background: rgba(255, 61, 58, 0.1);
+            border: 1px solid rgba(255, 61, 58, 0.3);
+            color: #FF3D3A;
+            padding: 0.875rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .tab:hover {
+            color: white;
+        }
+
+        .tab.active {
+            color: var(--datadog-accent);
+            border-bottom-color: var(--datadog-accent);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: #2A1F47;
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(99, 44, 166, 0.2);
+            border-top: 3px solid var(--datadog-purple);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .card-badge {
+            background: var(--datadog-accent);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--datadog-accent);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Email Inbox */
+        .inbox-container {
+            background: #2A1F47;
+            border-radius: 20px;
+            border: 1px solid rgba(99, 44, 166, 0.2);
+            border-top: 3px solid var(--datadog-pink);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .inbox-header {
+            padding: 1.5rem 2rem;
+            background: rgba(246, 83, 166, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .inbox-stats {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .inbox-stat {
+            text-align: center;
+        }
+
+        .inbox-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--datadog-pink);
+        }
+
+        .inbox-stat-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+        }
+
+        .email-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .email-item {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .email-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .email-item.unread {
+            background: rgba(99, 44, 166, 0.05);
+        }
+
+        .email-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .email-from {
+            font-weight: 600;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .email-date {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .email-subject {
+            font-size: 0.9375rem;
+            color: var(--datadog-accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .email-preview {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .email-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+        }
+
+        .email-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-high {
+            background: rgba(255, 61, 58, 0.2);
+            color: #FF3D3A;
+        }
+
+        .badge-medium {
+            background: rgba(255, 140, 0, 0.2);
+            color: #FF8C00;
+        }
+
+        .badge-low {
+            background: rgba(0, 212, 170, 0.2);
+            color: var(--datadog-accent);
+        }
+
+        .badge-pending {
+            background: rgba(246, 83, 166, 0.2);
+            color: var(--datadog-pink);
+        }
+
+        .badge-resolved {
+            background: rgba(0, 212, 170, 0.2);
+            color: var(--datadog-accent);
+        }
+
+        /* Email Detail Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            background: #2A1F47;
+            border-radius: 20px;
+            border: 1px solid rgba(99, 44, 166, 0.2);
+            max-width: 700px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--datadog-accent);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .email-field {
+            margin-bottom: 1.5rem;
+        }
+
+        .email-field-label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .email-field-value {
+            color: white;
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .logout-btn {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--datadog-purple);
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--datadog-purple);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const API_URL = 'https://hr-agent-tbd8.onrender.com';
+
+        function HRDashboard() {
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [activeTab, setActiveTab] = useState('inbox');
+            
+            // Data states
+            const [ptoData, setPtoData] = useState(null);
+            const [ticketData, setTicketData] = useState(null);
+            const [emailsData, setEmailsData] = useState(null);
+            const [selectedEmail, setSelectedEmail] = useState(null);
+            
+            // Filter states
+            const [statusFilter, setStatusFilter] = useState('all');
+            const [categoryFilter, setCategoryFilter] = useState('all');
+            
+            const ptoChartRef = useRef(null);
+            const ticketsChartRef = useRef(null);
+            const categoryChartRef = useRef(null);
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+
+                try {
+                    const response = await fetch(`${API_URL}/api/hr/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ username, password }),
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        setIsAuthenticated(true);
+                        loadAllData();
+                    } else {
+                        setError(data.error || 'Invalid credentials');
+                    }
+                } catch (err) {
+                    setError('Failed to connect to server');
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const loadAllData = async () => {
+                try {
+                    const [ptoRes, ticketRes, emailsRes] = await Promise.all([
+                        fetch(`${API_URL}/api/hr/analytics/pto-usage`, { credentials: 'include' }),
+                        fetch(`${API_URL}/api/hr/analytics/tickets`, { credentials: 'include' }),
+                        fetch(`${API_URL}/api/hr/emails`, { credentials: 'include' })
+                    ]);
+
+                    const ptoData = await ptoRes.json();
+                    const ticketData = await ticketRes.json();
+                    const emailsData = await emailsRes.json();
+
+                    if (ptoData.success) setPtoData(ptoData.data);
+                    if (ticketData.success) setTicketData(ticketData.data);
+                    if (emailsData.success) setEmailsData(emailsData);
+                } catch (err) {
+                    console.error('Failed to load data:', err);
+                }
+            };
+
+            const loadEmails = async () => {
+                try {
+                    const params = new URLSearchParams();
+                    if (statusFilter !== 'all') params.append('status', statusFilter);
+                    if (categoryFilter !== 'all') params.append('category', categoryFilter);
+                    
+                    const response = await fetch(`${API_URL}/api/hr/emails?${params}`, { 
+                        credentials: 'include' 
+                    });
+                    const data = await response.json();
+                    if (data.success) setEmailsData(data);
+                } catch (err) {
+                    console.error('Failed to load emails:', err);
+                }
+            };
+
+            useEffect(() => {
+                if (isAuthenticated) {
+                    loadEmails();
+                }
+            }, [statusFilter, categoryFilter, isAuthenticated]);
+
+            useEffect(() => {
+                if (ptoData && ptoChartRef.current) {
+                    const ctx = ptoChartRef.current.getContext('2d');
+                    
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(ptoData.pto_distribution),
+                            datasets: [{
+                                label: 'Number of Employees',
+                                data: Object.values(ptoData.pto_distribution),
+                                backgroundColor: '#632CA6',
+                                borderColor: '#8B5FBF',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: { color: 'white' } }
+                            },
+                            scales: {
+                                y: { 
+                                    ticks: { color: 'white' },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                },
+                                x: { 
+                                    ticks: { color: 'white' },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                }
+                            }
+                        }
+                    });
+                }
+            }, [ptoData]);
+
+            useEffect(() => {
+                if (ticketData && ticketsChartRef.current) {
+                    const ctx = ticketsChartRef.current.getContext('2d');
+                    
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: Object.keys(ticketData.tickets_per_week),
+                            datasets: [{
+                                label: 'Tickets Per Week',
+                                data: Object.values(ticketData.tickets_per_week),
+                                borderColor: '#00D4AA',
+                                backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { labels: { color: 'white' } }
+                            },
+                            scales: {
+                                y: { 
+                                    ticks: { color: 'white' },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                },
+                                x: { 
+                                    ticks: { color: 'white' },
+                                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                                }
+                            }
+                        }
+                    });
+                }
+            }, [ticketData]);
+
+            useEffect(() => {
+                if (ticketData && categoryChartRef.current) {
+                    const ctx = categoryChartRef.current.getContext('2d');
+                    
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(ticketData.tickets_by_category),
+                            datasets: [{
+                                data: Object.values(ticketData.tickets_by_category),
+                                backgroundColor: [
+                                    '#632CA6',
+                                    '#F653A6',
+                                    '#00D4AA',
+                                    '#8B5FBF',
+                                    '#FF7AC6'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { 
+                                    position: 'bottom',
+                                    labels: { color: 'white' }
+                                }
+                            }
+                        }
+                    });
+                }
+            }, [ticketData]);
+
+            if (!isAuthenticated) {
+                return (
+                    <div className="container">
+                        <div className="header">
+                            <h1>🔒 HR Dashboard</h1>
+                            <p className="subtitle">Secure Login Required</p>
+                        </div>
+
+                        <div className="login-container">
+                            <h2 className="login-title">HR Login</h2>
+                            {error && <div className="error-message">{error}</div>}
+                            <form onSubmit={handleLogin}>
+                                <div className="input-group">
+                                    <label>Username</label>
+                                    <input
+                                        type="text"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        placeholder="Enter HR username"
+                                        required
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Password</label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Enter password"
+                                        required
+                                    />
+                                </div>
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
+                                    {loading ? 'Logging in...' : 'Login'}
+                                </button>
+                            </form>
+                            <p style={{textAlign: 'center', marginTop: '1rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem'}}>
+                                Demo Credentials: hr / datadog2026
+                            </p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="container">
+                    <button className="logout-btn" onClick={() => setIsAuthenticated(false)}>
+                        Logout
+                    </button>
+
+                    <div className="header">
+                        <h1>📊 HR Analytics Dashboard</h1>
+                        <p className="subtitle">Real-time Employee & Ticket Insights</p>
+                    </div>
+
+                    <div className="tabs">
+                        <button 
+                            className={`tab ${activeTab === 'inbox' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('inbox')}
+                        >
+                            📧 Employee Requests
+                        </button>
+                        <button 
+                            className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('analytics')}
+                        >
+                            📊 Analytics
+                        </button>
+                    </div>
+
+                    {activeTab === 'inbox' && emailsData && (
+                        <div className="inbox-container">
+                            <div className="inbox-header">
+                                <h2 className="card-title">Employee Inbox</h2>
+                                <div className="inbox-stats">
+                                    <div className="inbox-stat">
+                                        <div className="inbox-stat-value">{emailsData.summary.total}</div>
+                                        <div className="inbox-stat-label">Total</div>
+                                    </div>
+                                    <div className="inbox-stat">
+                                        <div className="inbox-stat-value">{emailsData.summary.pending}</div>
+                                        <div className="inbox-stat-label">Pending</div>
+                                    </div>
+                                    <div className="inbox-stat">
+                                        <div className="inbox-stat-value">{emailsData.summary.high_priority}</div>
+                                        <div className="inbox-stat-label">High Priority</div>
+                                    </div>
+                                    <div className="inbox-stat">
+                                        <div className="inbox-stat-value">{emailsData.summary.overdue}</div>
+                                        <div className="inbox-stat-label">Overdue</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="filters">
+                                <select 
+                                    className="filter-select"
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                >
+                                    <option value="all">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="resolved">Resolved</option>
+                                </select>
+                                <select 
+                                    className="filter-select"
+                                    value={categoryFilter}
+                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                >
+                                    <option value="all">All Categories</option>
+                                    <option value="PTO Request">PTO Request</option>
+                                    <option value="Remote Work">Remote Work</option>
+                                    <option value="Benefits">Benefits</option>
+                                    <option value="Compensation">Compensation</option>
+                                    <option value="Leave Request">Leave Request</option>
+                                    <option value="Schedule Change">Schedule Change</option>
+                                </select>
+                            </div>
+
+                            <div className="email-list">
+                                {emailsData.emails.map((email) => (
+                                    <div 
+                                        key={email.id}
+                                        className={`email-item ${email.status === 'Pending' ? 'unread' : ''}`}
+                                        onClick={() => setSelectedEmail(email)}
+                                    >
+                                        <div className="email-header-row">
+                                            <div className="email-from">
+                                                {email.employee_name} (ID: {email.employee_id})
+                                            </div>
+                                            <div className="email-date">{email.date_received}</div>
+                                        </div>
+                                        <div className="email-subject">{email.subject}</div>
+                                        <div className="email-preview">{email.message}</div>
+                                        <div className="email-meta">
+                                            <span className={`email-badge badge-${email.priority.toLowerCase()}`}>
+                                                {email.priority}
+                                            </span>
+                                            <span className={`email-badge badge-${email.status.toLowerCase()}`}>
+                                                {email.status}
+                                            </span>
+                                            <span className="email-badge" style={{background: 'rgba(255,255,255,0.1)', color: 'white'}}>
+                                                {email.category}
+                                            </span>
+                                            {email.days_until_due < 0 && (
+                                                <span className="email-badge badge-high">
+                                                    OVERDUE
+                                                </span>
+                                            )}
+                                            {email.days_until_due >= 0 && email.days_until_due <= 2 && (
+                                                <span className="email-badge badge-medium">
+                                                    Due in {email.days_until_due} days
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'analytics' && (
+                        <div className="dashboard-grid">
+                            {ptoData && (
+                                <>
+                                    <div className="card">
+                                        <div className="card-header">
+                                            <h3 className="card-title">PTO Overview</h3>
+                                            <span className="card-badge">{ptoData.total_employees} Employees</span>
+                                        </div>
+                                        <div className="stat-grid">
+                                            <div className="stat-box">
+                                                <div className="stat-label">Average Days</div>
+                                                <div className="stat-value">{ptoData.average_days_remaining.toFixed(1)}</div>
+                                            </div>
+                                            <div className="stat-box">
+                                                <div className="stat-label">Median Days</div>
+                                                <div className="stat-value">{ptoData.median_days_remaining}</div>
+                                            </div>
+                                            <div className="stat-box">
+                                                <div className="stat-label">Low PTO (&lt;5)</div>
+                                                <div className="stat-value" style={{color: '#F653A6'}}>{ptoData.employees_low_pto}</div>
+                                            </div>
+                                            <div className="stat-box">
+                                                <div className="stat-label">High PTO (&gt;20)</div>
+                                                <div className="stat-value">{ptoData.employees_high_pto}</div>
+                                            </div>
+                                        </div>
+                                        <div className="chart-container">
+                                            <canvas ref={ptoChartRef}></canvas>
+                                        </div>
+                                    </div>
+
+                                    <div className="card">
+                                        <div className="card-header">
+                                            <h3 className="card-title">Ticket Trends</h3>
+                                            <span className="card-badge">Last 4 Weeks</span>
+                                        </div>
+                                        <div className="chart-container">
+                                            <canvas ref={ticketsChartRef}></canvas>
+                                        </div>
+                                    </div>
+
+                                    {ticketData && (
+                                        <>
+                                            <div className="card">
+                                                <div className="card-header">
+                                                    <h3 className="card-title">Ticket Metrics</h3>
+                                                    <span className="card-badge">{ticketData.total_tickets} Total</span>
+                                                </div>
+                                                <div className="stat-grid">
+                                                    <div className="stat-box">
+                                                        <div className="stat-label">Avg Resolution</div>
+                                                        <div className="stat-value">{ticketData.average_resolution_days.toFixed(1)} days</div>
+                                                    </div>
+                                                    <div className="stat-box">
+                                                        <div className="stat-label">Pending</div>
+                                                        <div className="stat-value" style={{color: '#F653A6'}}>{ticketData.pending_tickets}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="card">
+                                                <div className="card-header">
+                                                    <h3 className="card-title">Category Breakdown</h3>
+                                                </div>
+                                                <div className="chart-container">
+                                                    <canvas ref={categoryChartRef}></canvas>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {selectedEmail && (
+                        <div className="modal-overlay" onClick={() => setSelectedEmail(null)}>
+                            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <div className="modal-title">{selectedEmail.subject}</div>
+                                    <div className="email-meta">
+                                        <span className={`email-badge badge-${selectedEmail.priority.toLowerCase()}`}>
+                                            {selectedEmail.priority} Priority
+                                        </span>
+                                        <span className={`email-badge badge-${selectedEmail.status.toLowerCase()}`}>
+                                            {selectedEmail.status}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="modal-body">
+                                    <div className="email-field">
+                                        <div className="email-field-label">From</div>
+                                        <div className="email-field-value">
+                                            {selectedEmail.employee_name} (Employee ID: {selectedEmail.employee_id})
+                                        </div>
+                                    </div>
+                                    <div className="email-field">
+                                        <div className="email-field-label">Category</div>
+                                        <div className="email-field-value">{selectedEmail.category}</div>
+                                    </div>
+                                    <div className="email-field">
+                                        <div className="email-field-label">Date Received</div>
+                                        <div className="email-field-value">{selectedEmail.date_received}</div>
+                                    </div>
+                                    <div className="email-field">
+                                        <div className="email-field-label">Response Due</div>
+                                        <div className="email-field-value">
+                                            {selectedEmail.response_due}
+                                            {selectedEmail.days_until_due < 0 && (
+                                                <span style={{color: '#FF3D3A', marginLeft: '1rem'}}>
+                                                    (OVERDUE by {Math.abs(selectedEmail.days_until_due)} days)
+                                                </span>
+                                            )}
+                                            {selectedEmail.days_until_due >= 0 && (
+                                                <span style={{color: '#00D4AA', marginLeft: '1rem'}}>
+                                                    ({selectedEmail.days_until_due} days remaining)
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="email-field">
+                                        <div className="email-field-label">Message</div>
+                                        <div className="email-field-value">{selectedEmail.message}</div>
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <button className="btn-secondary" onClick={() => setSelectedEmail(null)}>
+                                        Close
+                                    </button>
+                                    <button className="btn btn-primary" style={{width: 'auto'}}>
+                                        Mark as Resolved
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<HRDashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>

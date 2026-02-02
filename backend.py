@@ -28,6 +28,7 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 CSV_PATH = os.getenv('CSV_PATH', "/Users/dempseywade/Desktop/Datadog/HRAgent/employees.csv")
 TICKETS_PATH = os.getenv('TICKETS_PATH', "/Users/dempseywade/Desktop/Datadog/HRAgent/hr_tickets.csv")
 HEALTH_PLANS_PATH = os.getenv('HEALTH_PLANS_PATH', "/Users/dempseywade/Desktop/Datadog/HRAgent/health_plans.csv")
+HR_EMAILS_PATH = os.getenv('HR_EMAILS_PATH', "/Users/dempseywade/Desktop/Datadog/HRAgent/hr_emails.csv")
 
 # For production, files will be in the same directory as backend.py
 if not os.path.exists(CSV_PATH):
@@ -36,6 +37,8 @@ if not os.path.exists(TICKETS_PATH):
     TICKETS_PATH = os.path.join(os.path.dirname(__file__), 'hr_tickets.csv')
 if not os.path.exists(HEALTH_PLANS_PATH):
     HEALTH_PLANS_PATH = os.path.join(os.path.dirname(__file__), 'health_plans.csv')
+if not os.path.exists(HR_EMAILS_PATH):
+    HR_EMAILS_PATH = os.path.join(os.path.dirname(__file__), 'hr_emails.csv')
 
 # Initialize the HR Agent
 try:
@@ -70,6 +73,19 @@ try:
         print(f"⚠️  Health plans file not found: {HEALTH_PLANS_PATH}")
 except Exception as e:
     print(f"✗ Error loading health plans: {e}")
+
+# Load HR Emails Data
+hr_emails_df = None
+try:
+    if os.path.exists(HR_EMAILS_PATH):
+        hr_emails_df = pd.read_csv(HR_EMAILS_PATH)
+        hr_emails_df['Date Received'] = pd.to_datetime(hr_emails_df['Date Received'])
+        hr_emails_df['Response Due'] = pd.to_datetime(hr_emails_df['Response Due'])
+        print(f"✓ HR Emails loaded: {len(hr_emails_df)} emails")
+    else:
+        print(f"⚠️  HR emails file not found: {HR_EMAILS_PATH}")
+except Exception as e:
+    print(f"✗ Error loading HR emails: {e}")
 
 # Initialize W-2 Generator
 try:
@@ -871,6 +887,70 @@ def get_ticket_analytics():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/hr/emails', methods=['GET', 'OPTIONS'])
+def get_hr_emails():
+    """Get HR emails/requests from employees"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    if hr_emails_df is None:
+        return jsonify({'success': False, 'error': 'HR emails data not loaded'}), 500
+    
+    try:
+        # Get filter parameters
+        status_filter = request.args.get('status', 'all')  # all, pending, resolved
+        category_filter = request.args.get('category', 'all')
+        
+        df = hr_emails_df.copy()
+        
+        # Apply filters
+        if status_filter != 'all':
+            df = df[df['Status'].str.lower() == status_filter.lower()]
+        
+        if category_filter != 'all':
+            df = df[df['Category'] == category_filter]
+        
+        # Convert to dict for JSON serialization
+        emails = []
+        for idx, row in df.iterrows():
+            emails.append({
+                'id': int(row['Email ID']),
+                'employee_name': row['Employee Name'],
+                'employee_id': int(row['Employee ID']),
+                'subject': row['Subject'],
+                'message': row['Message'],
+                'category': row['Category'],
+                'status': row['Status'],
+                'priority': row['Priority'],
+                'date_received': row['Date Received'].strftime('%Y-%m-%d'),
+                'response_due': row['Response Due'].strftime('%Y-%m-%d'),
+                'days_until_due': (row['Response Due'] - pd.Timestamp.now()).days
+            })
+        
+        # Sort by priority and date
+        priority_order = {'High': 0, 'Medium': 1, 'Low': 2}
+        emails.sort(key=lambda x: (priority_order.get(x['priority'], 3), x['date_received']), reverse=True)
+        
+        # Get summary stats
+        total_emails = len(hr_emails_df)
+        pending_emails = len(hr_emails_df[hr_emails_df['Status'] == 'Pending'])
+        high_priority = len(hr_emails_df[hr_emails_df['Priority'] == 'High'])
+        overdue = len(hr_emails_df[hr_emails_df['Response Due'] < pd.Timestamp.now()])
+        
+        return jsonify({
+            'success': True,
+            'emails': emails,
+            'summary': {
+                'total': total_emails,
+                'pending': pending_emails,
+                'high_priority': high_priority,
+                'overdue': overdue
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/hr/login', methods=['POST', 'OPTIONS'])
 def hr_login():
     """HR login endpoint"""
@@ -916,6 +996,32 @@ def check_hr_auth():
     
     is_hr = session.get('is_hr', False)
     return jsonify({'is_hr': is_hr})
+
+
+@app.route('/')
+def serve_frontend():
+    """Serve the main frontend HTML file"""
+    frontend_path = os.path.join(os.path.dirname(__file__), 'frontend.html')
+    if os.path.exists(frontend_path):
+        return send_file(frontend_path)
+    else:
+        return "Frontend not found", 404
+
+
+@app.route('/frontend.html')
+def serve_frontend_alt():
+    """Alternative route for frontend"""
+    return serve_frontend()
+
+
+@app.route('/hr_dashboard.html')
+def serve_hr_dashboard():
+    """Serve the HR dashboard HTML file"""
+    dashboard_path = os.path.join(os.path.dirname(__file__), 'hr_dashboard.html')
+    if os.path.exists(dashboard_path):
+        return send_file(dashboard_path)
+    else:
+        return "HR Dashboard not found", 404
 
 
 if __name__ == '__main__':
