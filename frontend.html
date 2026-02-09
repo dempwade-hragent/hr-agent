@@ -865,10 +865,10 @@
                     
                     if (data.success) {
                         return {
-                            text: data.answer,
+                            text: data.response,
                             downloadUrl: data.download_url || null,
                             fileType: data.file_type || null,
-                            showCalendar: data.answer.startsWith('SCHEDULE_CALL_REQUEST:'),
+                            showCalendar: data.response.startsWith('SCHEDULE_CALL_REQUEST:'),
                             pendingUpdate: data.pending_update || null,
                             showEmailButtons: data.show_email_buttons || false,
                             emailDraft: data.email_draft || null
@@ -989,7 +989,7 @@
                     if (data.success) {
                         const botMessage = {
                             type: 'bot',
-                            text: data.answer,
+                            text: data.response,
                             time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
                         };
                         setMessages(prev => [...prev, botMessage]);
@@ -1046,7 +1046,7 @@
                     if (data.success) {
                         const botMessage = {
                             type: 'bot',
-                            text: data.answer,
+                            text: data.response,
                             time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
                         };
                         setMessages(prev => [...prev, botMessage]);
