@@ -856,7 +856,7 @@
                         credentials: 'include',  // Important for session cookies
                         body: JSON.stringify({
                             question: question,
-                            employee_id: employeeId || undefined,
+                            employee_id: employeeId || firstName || 'guest',
                             first_name: firstName || undefined,
                         }),
                     });
