@@ -20,8 +20,10 @@ import pandas as pd
 import json
 import time
 from typing import Dict, Any, Optional
+import os
 
-client = OpenAI()  # Requires OPENAI_API_KEY environment variable
+api_key=os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key = api_key)  # Requires OPENAI_API_KEY environment variable
 
 
 class HRAgentOpenAI:
