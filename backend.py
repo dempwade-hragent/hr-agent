@@ -61,7 +61,7 @@ print(f"✅ OpenAI HR Agent initialized")
 # Initialize W-2 generator
 try:
     w2_output_dir = '/tmp/tax_documents' if os.path.exists('/tmp') else os.path.expanduser('~/Desktop/tax_documents')
-    w2_gen = W2Generator(employees_df, output_dir=w2_output_dir)
+    w2_gen = W2Generator(output_dir=w2_output_dir)
     print(f"✓ W-2 Generator initialized (output: {w2_output_dir})")
 except Exception as e:
     print(f"✗ Error initializing W-2 Generator: {e}")
@@ -116,6 +116,8 @@ def ask_question():
         session_id = session.get('session_id', employee_id)
         session['session_id'] = session_id
         
+        print(f"📥 Question from employee {employee_id}: {question}")
+        
         # CHANGED: Let OpenAI agent handle everything!
         # No more regex, no more if/else chains
         result = agent.chat(
@@ -124,14 +126,28 @@ def ask_question():
             session_id=session_id
         )
         
+        print(f"✅ Agent response: {result.get('response', '')[:100]}...")
+        
         # Check if this is a W-2 request
         if 'w2_generation' in str(result):
             if w2_gen:
                 try:
-                    pdf_path = w2_gen.generate_w2(int(employee_id))
+                    # Get employee data from DataFrame
+                    emp_id = employee_id
+                    if emp_id.startswith('EID'):
+                        numeric_id = int(emp_id.replace('EID', ''))
+                    else:
+                        numeric_id = int(emp_id)
+                    
+                    employee_row = employees_df[employees_df['Employee ID'] == numeric_id].iloc[0]
+                    employee_data = employee_row.to_dict()
+                    
+                    # Generate W-2
+                    pdf_path = w2_gen.generate_w2(employee_data)
                     result['w2_path'] = pdf_path
                     result['w2_download_url'] = f'/api/download-w2/{employee_id}'
                 except Exception as e:
+                    print(f"W-2 generation error: {e}")
                     result['w2_error'] = str(e)
         
         # Check if this is an HR escalation
@@ -142,10 +158,15 @@ def ask_question():
         return jsonify(result)
     
     except Exception as e:
-        print(f"Error in ask endpoint: {e}")
+        # IMPROVED: Log the actual error
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"❌ ERROR in ask endpoint:")
+        print(error_trace)
+        
         return jsonify({
             'success': False,
-            'error': 'Internal server error',
+            'error': f'Internal server error: {str(e)}',
             'response': 'I apologize, but I encountered an error. Please try again.'
         }), 500
 
@@ -157,19 +178,32 @@ def download_w2(employee_id):
         return jsonify({'error': 'W-2 generator not available'}), 500
     
     try:
-        pdf_path = os.path.join(w2_gen.output_dir, f'W2_2024_Employee_{employee_id}.pdf')
+        # Get employee data
+        emp_id = employee_id
+        if emp_id.startswith('EID'):
+            numeric_id = int(emp_id.replace('EID', ''))
+        else:
+            numeric_id = int(emp_id)
+        
+        employee_row = employees_df[employees_df['Employee ID'] == numeric_id].iloc[0]
+        employee_data = employee_row.to_dict()
+        first_name = employee_data.get('First Name', employee_data.get('Employee Name', 'Unknown').split()[0])
+        
+        # Check if file exists (filename format: {FirstName}_W2_2024.pdf)
+        pdf_path = os.path.join(w2_gen.output_dir, f'{first_name}_W2_2024.pdf')
         
         if not os.path.exists(pdf_path):
             # Generate if doesn't exist
-            pdf_path = w2_gen.generate_w2(int(employee_id))
+            pdf_path = w2_gen.generate_w2(employee_data)
         
         return send_file(
             pdf_path,
             as_attachment=True,
-            download_name=f'W2_2024_Employee_{employee_id}.pdf',
+            download_name=f'{first_name}_W2_2024.pdf',
             mimetype='application/pdf'
         )
     except Exception as e:
+        print(f"W-2 download error: {e}")
         return jsonify({'error': str(e)}), 500
 
 
