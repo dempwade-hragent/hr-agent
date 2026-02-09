@@ -276,7 +276,7 @@ When using tools:
             # Handle both numeric IDs and string IDs like "EID2480001"
             # Filter by exact match or numeric part
             if employee_id.startswith('EID'):
-                numeric_id = int(employee_id.replace('EID', ''))
+                numeric_id = employee_id #int(employee_id.replace('EID', ''))
                 employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
             else:
                 employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
