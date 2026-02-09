@@ -19,11 +19,33 @@ from openai import OpenAI
 import pandas as pd
 import json
 import time
-from typing import Dict, Any, Optional
 import os
+from typing import Dict, Any, Optional
 
-api_key=os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key = api_key)  # Requires OPENAI_API_KEY environment variable
+# Initialize OpenAI client with explicit API key check
+api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    raise ValueError(
+        "❌ OPENAI_API_KEY environment variable not set!\n"
+        "   Add it in Render Dashboard → Environment → Add Variable\n"
+        "   Get your key from: https://platform.openai.com/api-keys"
+    )
+
+if not api_key.startswith('sk-'):
+    raise ValueError(
+        f"❌ Invalid OPENAI_API_KEY format!\n"
+        f"   Key should start with 'sk-' but got: {api_key[:10]}...\n"
+        f"   Get a valid key from: https://platform.openai.com/api-keys"
+    )
+
+print(f"✓ OPENAI_API_KEY found: {api_key[:10]}...{api_key[-4:]}")
+
+try:
+    client = OpenAI(api_key=api_key)
+    print("✓ OpenAI client initialized successfully")
+except Exception as e:
+    raise ValueError(f"❌ Failed to initialize OpenAI client: {e}")
 
 
 class HRAgentOpenAI:
@@ -251,80 +273,112 @@ When using tools:
     def get_employee_salary(self, employee_id: str) -> Dict[str, Any]:
         """Get salary for an employee"""
         try:
-            employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            # Handle both numeric IDs and string IDs like "EID2480001"
+            # Filter by exact match or numeric part
+            if employee_id.startswith('EID'):
+                numeric_id = int(employee_id.replace('EID', ''))
+                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+            else:
+                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            
             return {
                 'success': True,
                 'employee_id': employee_id,
                 'name': employee['Employee Name'],
                 'salary': int(employee['Salary'])
             }
-        except (IndexError, KeyError):
-            return {'success': False, 'error': 'Employee not found'}
+        except (IndexError, KeyError, ValueError) as e:
+            return {'success': False, 'error': f'Employee not found: {employee_id}'}
     
     def get_pto_balance(self, employee_id: str) -> Dict[str, Any]:
         """Get PTO balance for an employee"""
         try:
-            employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            if employee_id.startswith('EID'):
+                numeric_id = int(employee_id.replace('EID', ''))
+                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+            else:
+                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            
             return {
                 'success': True,
                 'employee_id': employee_id,
                 'name': employee['Employee Name'],
                 'days_remaining': int(employee['Days Off'])
             }
-        except (IndexError, KeyError):
-            return {'success': False, 'error': 'Employee not found'}
+        except (IndexError, KeyError, ValueError) as e:
+            return {'success': False, 'error': f'Employee not found: {employee_id}'}
     
     def get_bonus_info(self, employee_id: str) -> Dict[str, Any]:
         """Get bonus percentage for an employee"""
         try:
-            employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            if employee_id.startswith('EID'):
+                numeric_id = int(employee_id.replace('EID', ''))
+                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+            else:
+                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            
             return {
                 'success': True,
                 'employee_id': employee_id,
                 'name': employee['Employee Name'],
                 'bonus_percentage': int(employee['Bonus %'])
             }
-        except (IndexError, KeyError):
-            return {'success': False, 'error': 'Employee not found'}
+        except (IndexError, KeyError, ValueError) as e:
+            return {'success': False, 'error': f'Employee not found: {employee_id}'}
     
     def get_location(self, employee_id: str) -> Dict[str, Any]:
         """Get employee's office location"""
         try:
-            employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            if employee_id.startswith('EID'):
+                numeric_id = int(employee_id.replace('EID', ''))
+                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+            else:
+                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            
             return {
                 'success': True,
                 'employee_id': employee_id,
                 'name': employee['Employee Name'],
                 'location': employee['Location']
             }
-        except (IndexError, KeyError):
-            return {'success': False, 'error': 'Employee not found'}
+        except (IndexError, KeyError, ValueError) as e:
+            return {'success': False, 'error': f'Employee not found: {employee_id}'}
     
     def get_team_info(self, employee_id: str) -> Dict[str, Any]:
         """Get employee's team/department"""
         try:
-            employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            if employee_id.startswith('EID'):
+                numeric_id = int(employee_id.replace('EID', ''))
+                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+            else:
+                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            
             return {
                 'success': True,
                 'employee_id': employee_id,
                 'name': employee['Employee Name'],
                 'team': employee['Team']
             }
-        except (IndexError, KeyError):
-            return {'success': False, 'error': 'Employee not found'}
+        except (IndexError, KeyError, ValueError) as e:
+            return {'success': False, 'error': f'Employee not found: {employee_id}'}
     
     def get_manager_info(self, employee_id: str) -> Dict[str, Any]:
         """Get employee's manager information"""
         try:
-            employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            if employee_id.startswith('EID'):
+                numeric_id = int(employee_id.replace('EID', ''))
+                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+            else:
+                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            
             return {
                 'success': True,
                 'employee_id': employee_id,
                 'name': employee['Employee Name'],
                 'manager': employee['Manager']
             }
-        except (IndexError, KeyError):
-            return {'success': False, 'error': 'Employee not found'}
+        except (IndexError, KeyError, ValueError) as e:
+            return {'success': False, 'error': f'Employee not found: {employee_id}'}
     
     def get_health_insurance_plans(self) -> Dict[str, Any]:
         """Get all health insurance plans"""
@@ -346,7 +400,12 @@ When using tools:
     def generate_w2_request(self, employee_id: str) -> Dict[str, Any]:
         """Generate W-2 request (will be handled by backend)"""
         try:
-            employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            if employee_id.startswith('EID'):
+                numeric_id = int(employee_id.replace('EID', ''))
+                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+            else:
+                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            
             return {
                 'success': True,
                 'action': 'w2_generation',
@@ -354,8 +413,8 @@ When using tools:
                 'name': employee['Employee Name'],
                 'message': 'W-2 generation initiated. You will receive a download link shortly.'
             }
-        except (IndexError, KeyError):
-            return {'success': False, 'error': 'Employee not found'}
+        except (IndexError, KeyError, ValueError) as e:
+            return {'success': False, 'error': f'Employee not found: {employee_id}'}
     
     def escalate_to_hr(self, employee_id: str, subject: str, request: str) -> Dict[str, Any]:
         """Escalate request to HR"""
@@ -439,11 +498,21 @@ When using tools:
             'escalate_to_hr': self.escalate_to_hr,
         }
         
-        while True:
-            run_status = client.beta.threads.runs.retrieve(
-                thread_id=thread_id,
-                run_id=run_id
-            )
+        max_iterations = 30  # Prevent infinite loops
+        iteration = 0
+        
+        while iteration < max_iterations:
+            iteration += 1
+            
+            try:
+                run_status = client.beta.threads.runs.retrieve(
+                    thread_id=thread_id,
+                    run_id=run_id
+                )
+            except Exception as e:
+                print(f"Error retrieving run status: {e}")
+                time.sleep(1)
+                continue
             
             if run_status.status == 'requires_action':
                 # Agent wants to call tools
@@ -463,11 +532,15 @@ When using tools:
                         })
                 
                 # Submit results back to agent
-                client.beta.threads.runs.submit_tool_outputs(
-                    thread_id=thread_id,
-                    run_id=run_id,
-                    tool_outputs=tool_outputs
-                )
+                try:
+                    client.beta.threads.runs.submit_tool_outputs(
+                        thread_id=thread_id,
+                        run_id=run_id,
+                        tool_outputs=tool_outputs
+                    )
+                except Exception as e:
+                    print(f"Error submitting tool outputs: {e}")
+                    return f"I encountered an error processing your request. Please try again."
             
             elif run_status.status == 'completed':
                 # Get the response
@@ -475,9 +548,12 @@ When using tools:
                 return messages.data[0].content[0].text.value
             
             elif run_status.status in ['failed', 'cancelled', 'expired']:
+                print(f"Run status: {run_status.status}")
                 return f"I apologize, but I encountered an error processing your request. Please try again."
             
             time.sleep(0.5)
+        
+        return "Request timed out. Please try asking your question again."
     
     def cleanup(self):
         """Clean up resources"""
