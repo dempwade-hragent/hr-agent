@@ -273,13 +273,11 @@ When using tools:
     def get_employee_salary(self, employee_id: str) -> Dict[str, Any]:
         """Get salary for an employee"""
         try:
-            # Handle both numeric IDs and string IDs like "EID2480001"
-            # Filter by exact match or numeric part
-            if employee_id.startswith('EID'):
-                numeric_id = employee_id #int(employee_id.replace('EID', ''))
-                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
-            else:
-                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            # Try to find employee by ID or name
+            employee = self._find_employee(employee_id)
+            
+            if employee is None:
+                return {'success': False, 'error': f'Employee not found: {employee_id}'}
             
             return {
                 'success': True,
@@ -290,14 +288,62 @@ When using tools:
         except (IndexError, KeyError, ValueError) as e:
             return {'success': False, 'error': f'Employee not found: {employee_id}'}
     
+    def _find_employee(self, employee_id: str):
+        """
+        Find employee by ID or name
+        
+        Handles:
+        - Numeric IDs: "1", "2", "3"
+        - EID format: "EID2480001" 
+        - First name: "Thomas"
+        - Full name: "Thomas Anderson"
+        """
+        try:
+            # Case 1: EID format (e.g., "EID2480001")
+            if employee_id.startswith('EID'):
+                numeric_id = int(employee_id.replace('EID', ''))
+                return self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+            
+            # Case 2: Pure numeric (e.g., "1", "2", "3")
+            if employee_id.isdigit():
+                return self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            
+            # Case 3: Name search (e.g., "Thomas" or "Thomas Anderson")
+            # Try exact match on Employee Name
+            name_match = self.employees_df[
+                self.employees_df['Employee Name'].str.lower() == employee_id.lower()
+            ]
+            if not name_match.empty:
+                return name_match.iloc[0]
+            
+            # Try partial match on Employee Name (contains)
+            name_match = self.employees_df[
+                self.employees_df['Employee Name'].str.lower().str.contains(employee_id.lower(), na=False)
+            ]
+            if not name_match.empty:
+                return name_match.iloc[0]
+            
+            # Try First Name column if it exists
+            if 'First Name' in self.employees_df.columns:
+                first_name_match = self.employees_df[
+                    self.employees_df['First Name'].str.lower() == employee_id.lower()
+                ]
+                if not first_name_match.empty:
+                    return first_name_match.iloc[0]
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error finding employee: {e}")
+            return None
+    
     def get_pto_balance(self, employee_id: str) -> Dict[str, Any]:
         """Get PTO balance for an employee"""
         try:
-            if employee_id.startswith('EID'):
-                numeric_id = int(employee_id.replace('EID', ''))
-                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
-            else:
-                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            employee = self._find_employee(employee_id)
+            
+            if employee is None:
+                return {'success': False, 'error': f'Employee not found: {employee_id}'}
             
             return {
                 'success': True,
@@ -311,11 +357,10 @@ When using tools:
     def get_bonus_info(self, employee_id: str) -> Dict[str, Any]:
         """Get bonus percentage for an employee"""
         try:
-            if employee_id.startswith('EID'):
-                numeric_id = int(employee_id.replace('EID', ''))
-                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
-            else:
-                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            employee = self._find_employee(employee_id)
+            
+            if employee is None:
+                return {'success': False, 'error': f'Employee not found: {employee_id}'}
             
             return {
                 'success': True,
@@ -329,11 +374,10 @@ When using tools:
     def get_location(self, employee_id: str) -> Dict[str, Any]:
         """Get employee's office location"""
         try:
-            if employee_id.startswith('EID'):
-                numeric_id = int(employee_id.replace('EID', ''))
-                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
-            else:
-                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            employee = self._find_employee(employee_id)
+            
+            if employee is None:
+                return {'success': False, 'error': f'Employee not found: {employee_id}'}
             
             return {
                 'success': True,
@@ -347,11 +391,10 @@ When using tools:
     def get_team_info(self, employee_id: str) -> Dict[str, Any]:
         """Get employee's team/department"""
         try:
-            if employee_id.startswith('EID'):
-                numeric_id = int(employee_id.replace('EID', ''))
-                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
-            else:
-                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            employee = self._find_employee(employee_id)
+            
+            if employee is None:
+                return {'success': False, 'error': f'Employee not found: {employee_id}'}
             
             return {
                 'success': True,
@@ -365,11 +408,10 @@ When using tools:
     def get_manager_info(self, employee_id: str) -> Dict[str, Any]:
         """Get employee's manager information"""
         try:
-            if employee_id.startswith('EID'):
-                numeric_id = int(employee_id.replace('EID', ''))
-                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
-            else:
-                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            employee = self._find_employee(employee_id)
+            
+            if employee is None:
+                return {'success': False, 'error': f'Employee not found: {employee_id}'}
             
             return {
                 'success': True,
@@ -400,11 +442,10 @@ When using tools:
     def generate_w2_request(self, employee_id: str) -> Dict[str, Any]:
         """Generate W-2 request (will be handled by backend)"""
         try:
-            if employee_id.startswith('EID'):
-                numeric_id = int(employee_id.replace('EID', ''))
-                employee = self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
-            else:
-                employee = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+            employee = self._find_employee(employee_id)
+            
+            if employee is None:
+                return {'success': False, 'error': f'Employee not found: {employee_id}'}
             
             return {
                 'success': True,
@@ -451,6 +492,9 @@ When using tools:
         # Get or create thread for this session
         thread_id = self._get_or_create_thread(session_id or employee_id)
         
+        # CRITICAL: Check if there's an active run and wait for it to complete
+        self._wait_for_thread_ready(thread_id)
+        
         # Add user message to thread
         client.beta.threads.messages.create(
             thread_id=thread_id,
@@ -473,6 +517,44 @@ When using tools:
             'method': 'openai_agents_sdk',
             'thread_id': thread_id
         }
+    
+    def _wait_for_thread_ready(self, thread_id: str, max_wait: int = 30) -> None:
+        """
+        Wait for any active runs on the thread to complete before adding new messages.
+        
+        Args:
+            thread_id: The thread to check
+            max_wait: Maximum seconds to wait (default 30)
+        """
+        start_time = time.time()
+        
+        while time.time() - start_time < max_wait:
+            try:
+                # Get all runs for this thread
+                runs = client.beta.threads.runs.list(thread_id=thread_id, limit=1)
+                
+                if not runs.data:
+                    # No runs exist, thread is ready
+                    return
+                
+                latest_run = runs.data[0]
+                
+                # Check if the latest run is still active
+                if latest_run.status in ['queued', 'in_progress', 'requires_action']:
+                    print(f"⏳ Thread busy (status: {latest_run.status}), waiting...")
+                    time.sleep(1)
+                    continue
+                else:
+                    # Run is completed/failed/cancelled, thread is ready
+                    return
+                    
+            except Exception as e:
+                print(f"Error checking thread status: {e}")
+                time.sleep(1)
+        
+        # If we get here, we've waited too long
+        print(f"⚠️  Thread still busy after {max_wait}s, proceeding anyway...")
+        return
     
     def _get_or_create_thread(self, session_id: str) -> str:
         """Get existing thread or create new one"""
