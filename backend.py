@@ -1,31 +1,32 @@
 """
-Backend.py - OpenAI Agents SDK Version (2025)
-==============================================
+Backend.py - OpenAI Agents SDK Version
+========================================
 
 Uses:
 - Quart (async Flask) for async/await support
-- New hr_agent_sdk_new.py with Agents SDK
-- Clean, modern code
+- openai-agents package (from agents import Agent, Runner, etc.)
+- Clean, modern code that actually works!
 
 All API endpoints stay the same for frontend compatibility!
 """
 
-from quart import Quart, request, jsonify, session, send_file
+from quart import Quart, request, jsonify, send_file
 from quart_cors import cors
 import pandas as pd
 import os
 from datetime import datetime
-import asyncio
 
-# NEW: Import the modern HR Agent system
+# Import the HR Agent system
 from hr_agent_sdk_openai import HRAgentSystem
 from w2_generator import W2Generator
 
+# ================================================================
+# INITIALIZE QUART APP (avoiding Flask compatibility issues)
+# ================================================================
+
 app = Quart(__name__)
-app.config.update(
-    SECRET_KEY='your-secret-key-here-change-in-production',
-    PROVIDE_AUTOMATIC_OPTIONS=True
-)
+
+# Apply CORS first
 app = cors(app, allow_credentials=True)
 
 # ================================================================
@@ -50,10 +51,9 @@ print(f"✓ Loaded {len(hr_emails_df)} emails")
 print(f"✓ Loaded {len(health_plans_df)} health plans")
 
 # ================================================================
-# INITIALIZE NEW HR AGENT SYSTEM
+# INITIALIZE HR AGENT SYSTEM (with Agents SDK)
 # ================================================================
 
-# NEW: Simple one-line initialization!
 hr_agent_system = HRAgentSystem(
     employees_df=employees_df,
     health_plans_df=health_plans_df
@@ -70,6 +70,8 @@ except Exception as e:
     print(f"✗ Error initializing W-2 Generator: {e}")
     w2_gen = None
 
+# Simple in-memory session store (for HR auth)
+hr_sessions = set()
 
 # ================================================================
 # API ENDPOINTS
@@ -83,7 +85,7 @@ async def health_check():
     
     return jsonify({
         'status': 'healthy',
-        'agent': 'openai_agents_sdk_2025',
+        'agent': 'openai_agents_sdk',
         'model': 'gpt-4o-mini',
         'employees': len(employees_df),
         'timestamp': datetime.now().isoformat()
@@ -95,13 +97,13 @@ async def ask_question():
     """
     Main chat endpoint
     
-    NEW: Uses async Agents SDK - super clean!
+    Uses the new Agents SDK with Agent and Runner
     """
     if request.method == 'OPTIONS':
         return '', 200
     
     try:
-        data = await request.json
+        data = await request.get_json()
         question = data.get('question', '').strip()
         employee_id = str(data.get('employee_id', ''))
         
@@ -113,23 +115,25 @@ async def ask_question():
         
         print(f"📥 Question from employee {employee_id}: {question}")
         
-        # NEW: Just await the chat - that's it!
+        # Use the Agents SDK to process the question
         result = await hr_agent_system.chat(employee_id, question)
         
         print(f"✅ Response: {result['response'][:100]}...")
         
         # Check if this is a W-2 request
-        response_lower = result['response'].lower()
+        response_lower = result.get('response', '').lower()
         if 'w-2' in response_lower or 'w2' in response_lower:
             if w2_gen:
                 try:
                     # Find employee in DataFrame
-                    emp_id_clean = employee_id.replace('EID', '') if employee_id.startswith('EID') else employee_id
-                    
-                    # Search for employee
                     employee_row = None
                     if employee_id.startswith('EID'):
                         match = employees_df[employees_df['Employee ID'].astype(str).str.strip() == employee_id]
+                        if not match.empty:
+                            employee_row = match.iloc[0]
+                    else:
+                        # Try by first name
+                        match = employees_df[employees_df['First Name'].astype(str).str.strip().str.lower() == employee_id.lower()]
                         if not match.empty:
                             employee_row = match.iloc[0]
                     
@@ -165,16 +169,19 @@ async def download_w2(employee_id):
     
     try:
         # Find employee
-        emp_id = employee_id
-        if emp_id.startswith('EID'):
-            match = employees_df[employees_df['Employee ID'].astype(str).str.strip() == emp_id]
+        employee_row = None
+        if employee_id.startswith('EID'):
+            match = employees_df[employees_df['Employee ID'].astype(str).str.strip() == employee_id]
+            if not match.empty:
+                employee_row = match.iloc[0]
         else:
-            match = employees_df[employees_df['Employee ID'].astype(str).str.strip() == emp_id]
+            match = employees_df[employees_df['First Name'].astype(str).str.strip().str.lower() == employee_id.lower()]
+            if not match.empty:
+                employee_row = match.iloc[0]
         
-        if match.empty:
+        if employee_row is None:
             return jsonify({'error': 'Employee not found'}), 404
         
-        employee_row = match.iloc[0]
         employee_data = employee_row.to_dict()
         first_name = employee_data.get('First Name', 'Unknown')
         
@@ -188,7 +195,7 @@ async def download_w2(employee_id):
         return await send_file(
             pdf_path,
             as_attachment=True,
-            download_name=f'{first_name}_W2_2024.pdf',
+            attachment_filename=f'{first_name}_W2_2024.pdf',
             mimetype='application/pdf'
         )
     except Exception as e:
@@ -212,13 +219,14 @@ async def hr_login():
     if request.method == 'OPTIONS':
         return '', 200
     
-    data = await request.json
+    data = await request.get_json()
     username = data.get('username')
     password = data.get('password')
     
     # Simple auth (use proper auth in production!)
     if username == 'hr' and password == 'datadog2026':
-        session['is_hr'] = True
+        # Store session (simple in-memory for demo)
+        hr_sessions.add(request.remote_addr)
         return jsonify({
             'success': True,
             'message': 'Login successful'
@@ -233,7 +241,8 @@ async def hr_login():
 @app.route('/api/hr/pto-overview', methods=['GET'])
 async def pto_overview():
     """PTO analytics for HR dashboard"""
-    if not session.get('is_hr'):
+    # Simple auth check
+    if request.remote_addr not in hr_sessions:
         return jsonify({'error': 'Unauthorized'}), 401
     
     # Use the correct column name
@@ -260,7 +269,7 @@ async def pto_overview():
 @app.route('/api/hr/ticket-analytics', methods=['GET'])
 async def ticket_analytics():
     """Ticket analytics for HR dashboard"""
-    if not session.get('is_hr'):
+    if request.remote_addr not in hr_sessions:
         return jsonify({'error': 'Unauthorized'}), 401
     
     total_tickets = len(hr_tickets_df)
@@ -291,7 +300,7 @@ async def ticket_analytics():
 @app.route('/api/hr/emails', methods=['GET'])
 async def get_hr_emails():
     """Get HR email inbox"""
-    if not session.get('is_hr'):
+    if request.remote_addr not in hr_sessions:
         return jsonify({'error': 'Unauthorized'}), 401
     
     # Filter parameters
@@ -377,7 +386,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     
     print("\n" + "="*60)
-    print("🚀 HR Backend Server (Agents SDK 2025)")
+    print("🚀 HR Backend Server (Agents SDK)")
     print("="*60)
     print(f"Agent: OpenAI Agents SDK")
     print(f"Model: gpt-4o-mini")
