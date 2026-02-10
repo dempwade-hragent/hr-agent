@@ -286,34 +286,84 @@ def request_w2_form(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
 
 
 @function_tool
-def escalate_to_hr(ctx: RunContextWrapper[HRContext], employee_id: str, subject: str, reason: str) -> str:
-    """Escalate a request to HR when you cannot help directly.
-    
-    Use this when:
-    - The request is outside your capabilities
-    - The employee needs to speak with a human
-    - Complex issues requiring HR intervention
+def schedule_hr_meeting(ctx: RunContextWrapper[HRContext], employee_id: str, reason: str) -> str:
+    """Schedule a meeting with HR. Use when employee asks to meet with HR or schedule a calendar meeting.
     
     Args:
         employee_id: Employee ID
-        subject: Brief subject line for the escalation (e.g., "Salary Adjustment Request")
-        reason: Detailed reason for escalation (what the employee asked for and why you can't help)
+        reason: Why they want to meet (include any topics they mentioned from the conversation)
     """
     employee = find_employee(ctx.context, employee_id)
     
     name = 'Unknown Employee'
+    emp_id_display = employee_id
     if employee is not None:
         name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+        emp_id_display = employee.get('Employee ID', employee_id)
     
-    # Create a formatted email draft
+    # Create a formatted meeting request email
     email_body = f"""Dear HR Team,
 
-Employee: {name} (ID: {employee_id})
-Subject: {subject}
+MEETING REQUEST
 
+Employee: {name} (ID: {emp_id_display})
+
+REASON FOR MEETING:
 {reason}
 
-This request has been escalated as it requires human review and assistance.
+Please send a calendar invitation to schedule a meeting time with this employee.
+
+Best regards,
+HR Assistant Bot"""
+    
+    return json.dumps({
+        'success': True,
+        'action': 'schedule_meeting',
+        'employee_id': employee_id,
+        'name': name,
+        'reason': reason,
+        'email_draft': email_body,
+        'recipient': 'hr@company.com'
+    })
+
+
+@function_tool
+def escalate_to_hr(ctx: RunContextWrapper[HRContext], employee_id: str, subject: str, reason: str) -> str:
+    """Escalate a request to HR. Use when the user asks for something you cannot do.
+    
+    IMPORTANT: Include FULL CONTEXT in the 'reason' parameter.
+    - What did the user say they want?
+    - What specific details did they provide?
+    - What was the conversation about?
+    
+    Examples:
+    - Subject: "Salary Increase Request", Reason: "Employee is requesting a salary increase to $500,000 per year. They stated they deserve this because they are the best performer."
+    - Subject: "Meeting Request", Reason: "Employee wants to schedule a meeting with HR to discuss benefits."
+    - Subject: "Policy Question", Reason: "Employee is asking about remote work policy and whether they can work from home 3 days per week."
+    
+    Args:
+        employee_id: Employee ID
+        subject: Brief subject line (e.g., "Salary Increase Request", "Meeting Request")
+        reason: DETAILED explanation including what the user said they want and any context from the conversation
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    name = 'Unknown Employee'
+    emp_id_display = employee_id
+    if employee is not None:
+        name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+        emp_id_display = employee.get('Employee ID', employee_id)
+    
+    # Create a formatted email draft with ALL the context
+    email_body = f"""Dear HR Team,
+
+Employee: {name} (ID: {emp_id_display})
+Subject: {subject}
+
+REQUEST DETAILS:
+{reason}
+
+This request has been escalated for your review and assistance.
 
 Best regards,
 HR Assistant Bot"""
@@ -336,40 +386,60 @@ HR Assistant Bot"""
 
 hr_agent = Agent(
     name="HR Assistant",
-    instructions="""You are a helpful and professional HR assistant with memory of past conversations.
+    instructions="""You are a direct, solution-oriented HR assistant. GET THINGS DONE.
 
-You help employees with:
-- Salary and compensation questions
-- PTO/vacation balance inquiries
-- Bonus information
-- Office locations and team information
-- Manager details
-- Health insurance plan comparisons
-- W-2 tax form requests
-- Escalating complex requests to HR
+CORE BEHAVIOR:
+- Answer questions directly and concisely
+- Don't ask for more information unless absolutely essential
+- Don't make small talk or be overly conversational
+- Execute requests immediately - don't explain what you're going to do, just do it
+- Remember previous messages in the conversation
 
-Guidelines:
-- REMEMBER previous messages in the conversation - you have access to conversation history
-- Always be friendly, professional, and concise
-- When you use a tool and get employee information, use their name in your response
-- Format currency with commas (e.g., $120,000)
-- If you get an error that employee wasn't found, politely ask them to verify their employee ID
-- When showing health insurance plans, create a clear comparison
-- If you cannot help directly, use the escalate_to_hr tool and show them the email draft
+WHAT YOU CAN DO:
+- Answer: salary, PTO, bonus, location, team, manager, health plans
+- Generate: W-2 forms
+- Schedule: meetings with HR (use schedule_hr_meeting tool)
+- Escalate: raise requests, policy questions, complex issues
 
-IMPORTANT about escalations:
-- When you escalate to HR, the escalate_to_hr tool will return an email draft
-- ALWAYS show the user the email_draft field from the tool response
-- Tell them "Here's the email I've drafted for HR:" and then show the email
-- This way they can see exactly what will be sent
+RESPONSE STYLE:
+✅ GOOD: "Your salary is $95,000."
+❌ BAD: "I'd be happy to help you with that! Let me check your salary information for you..."
 
-IMPORTANT about conversation memory:
-- You can reference things from earlier in the conversation
-- If the user says "what did you just tell me" or "what was that about", refer back to previous messages
-- Keep track of what you've told them already
+✅ GOOD: "You have 15 PTO days remaining."
+❌ BAD: "Of course! I can help you with your PTO balance. Let me look that up..."
 
-The tools return JSON strings - parse them to extract the data.
-Check the 'success' field before using the data.
+MEETING REQUESTS:
+When user asks to "schedule a meeting" or "meet with HR":
+- Use schedule_hr_meeting tool immediately
+- Include any context they mentioned (what they want to discuss)
+- Show them the email draft
+
+ESCALATIONS (raise requests, policy changes, complex issues):
+When user asks for something you can't do (raise, policy change):
+1. Call escalate_to_hr with EXACT details from the conversation
+2. In 'reason', quote what they said: "Employee wants X because Y"
+3. Show the email draft
+
+Example conversations:
+User: "I want a raise to $500k"
+You: [call escalate_to_hr with reason: "Employee is requesting a salary increase to $500,000 per year."]
+You: "I've escalated your raise request to HR. Here's the email:
+[show email_draft]"
+
+User: "Can I schedule a meeting with HR?"
+You: [call schedule_hr_meeting with reason: "Employee wants to schedule a meeting with HR."]
+You: "Meeting request sent to HR. Here's the email:
+[show email_draft]"
+
+CRITICAL RULES:
+- NEVER ask the user to verify their employee ID - you already have it from the system
+- NEVER ask for "more details" on escalations - just escalate with what they said
+- NEVER say "I can help with that" - just help
+- Tools return JSON - parse it and extract data
+- For escalations/meetings: Parse the JSON, extract 'email_draft' field, and SHOW IT to the user
+- When showing email drafts, say "Here's the email:" then show the FULL email_draft content
+
+Be efficient. Be direct. Get it done.
 """,
     tools=[
         get_employee_salary,
@@ -380,6 +450,7 @@ Check the 'success' field before using the data.
         get_manager_info,
         get_health_insurance_plans,
         request_w2_form,
+        schedule_hr_meeting,
         escalate_to_hr,
     ],
     model="gpt-4o-mini",
