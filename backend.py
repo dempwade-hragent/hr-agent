@@ -22,7 +22,10 @@ from hr_agent_sdk_openai import HRAgentSystem
 from w2_generator import W2Generator
 
 app = Quart(__name__)
-app.secret_key = 'your-secret-key-here-change-in-production'
+app.config.update(
+    SECRET_KEY='your-secret-key-here-change-in-production',
+    PROVIDE_AUTOMATIC_OPTIONS=True
+)
 app = cors(app, allow_credentials=True)
 
 # ================================================================
