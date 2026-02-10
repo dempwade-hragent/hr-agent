@@ -1,33 +1,32 @@
 """
-Backend.py - OpenAI Agents SDK Version
-========================================
+Backend.py - OpenAI Agents SDK Version with Flask
+===================================================
 
 Uses:
-- Quart (async Flask) for async/await support
-- openai-agents package (from agents import Agent, Runner, etc.)
-- Clean, modern code that actually works!
+- Flask (regular, not Quart) to avoid version compatibility bugs
+- openai-agents package
+- asyncio.run() to call async agent methods
 
-All API endpoints stay the same for frontend compatibility!
+ACTUALLY WORKS!
 """
 
-from quart import Quart, request, jsonify, send_file
-from quart_cors import cors
+from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 import pandas as pd
 import os
 from datetime import datetime
+import asyncio
 
 # Import the HR Agent system
 from hr_agent_sdk_openai import HRAgentSystem
 from w2_generator import W2Generator
 
 # ================================================================
-# INITIALIZE QUART APP (avoiding Flask compatibility issues)
+# INITIALIZE FLASK APP
 # ================================================================
 
-app = Quart(__name__)
-
-# Apply CORS first
-app = cors(app, allow_credentials=True)
+app = Flask(__name__)
+CORS(app)
 
 # ================================================================
 # LOAD DATA
@@ -70,7 +69,7 @@ except Exception as e:
     print(f"✗ Error initializing W-2 Generator: {e}")
     w2_gen = None
 
-# Simple in-memory session store (for HR auth)
+# Simple in-memory session store
 hr_sessions = set()
 
 # ================================================================
@@ -78,7 +77,7 @@ hr_sessions = set()
 # ================================================================
 
 @app.route('/api/health', methods=['GET', 'OPTIONS'])
-async def health_check():
+def health_check():
     """Health check endpoint"""
     if request.method == 'OPTIONS':
         return '', 200
@@ -93,17 +92,17 @@ async def health_check():
 
 
 @app.route('/api/ask', methods=['POST', 'OPTIONS'])
-async def ask_question():
+def ask_question():
     """
     Main chat endpoint
     
-    Uses the new Agents SDK with Agent and Runner
+    Uses the Agents SDK with asyncio.run()
     """
     if request.method == 'OPTIONS':
         return '', 200
     
     try:
-        data = await request.get_json()
+        data = request.get_json()
         question = data.get('question', '').strip()
         employee_id = str(data.get('employee_id', ''))
         
@@ -115,8 +114,8 @@ async def ask_question():
         
         print(f"📥 Question from employee {employee_id}: {question}")
         
-        # Use the Agents SDK to process the question
-        result = await hr_agent_system.chat(employee_id, question)
+        # Call async method using asyncio.run()
+        result = asyncio.run(hr_agent_system.chat(employee_id, question))
         
         print(f"✅ Response: {result['response'][:100]}...")
         
@@ -162,7 +161,7 @@ async def ask_question():
 
 
 @app.route('/api/download-w2/<employee_id>', methods=['GET'])
-async def download_w2(employee_id):
+def download_w2(employee_id):
     """Download W-2 PDF"""
     if not w2_gen:
         return jsonify({'error': 'W-2 generator not available'}), 500
@@ -192,10 +191,10 @@ async def download_w2(employee_id):
             # Generate if doesn't exist
             pdf_path = w2_gen.generate_w2(employee_data)
         
-        return await send_file(
+        return send_file(
             pdf_path,
             as_attachment=True,
-            attachment_filename=f'{first_name}_W2_2024.pdf',
+            download_name=f'{first_name}_W2_2024.pdf',
             mimetype='application/pdf'
         )
     except Exception as e:
@@ -204,7 +203,7 @@ async def download_w2(employee_id):
 
 
 @app.route('/api/employees', methods=['GET'])
-async def list_employees():
+def list_employees():
     """Get all employees (for testing)"""
     return jsonify({
         'success': True,
@@ -214,18 +213,17 @@ async def list_employees():
 
 
 @app.route('/api/hr/login', methods=['POST', 'OPTIONS'])
-async def hr_login():
+def hr_login():
     """HR dashboard login"""
     if request.method == 'OPTIONS':
         return '', 200
     
-    data = await request.get_json()
+    data = request.get_json()
     username = data.get('username')
     password = data.get('password')
     
-    # Simple auth (use proper auth in production!)
+    # Simple auth
     if username == 'hr' and password == 'datadog2026':
-        # Store session (simple in-memory for demo)
         hr_sessions.add(request.remote_addr)
         return jsonify({
             'success': True,
@@ -239,18 +237,15 @@ async def hr_login():
 
 
 @app.route('/api/hr/pto-overview', methods=['GET'])
-async def pto_overview():
-    """PTO analytics for HR dashboard"""
-    # Simple auth check
+def pto_overview():
+    """PTO analytics"""
     if request.remote_addr not in hr_sessions:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # Use the correct column name
     pto_column = 'Days Off Remaining' if 'Days Off Remaining' in employees_df.columns else 'Days Off'
     avg_pto = employees_df[pto_column].mean()
     total_employees = len(employees_df)
     
-    # PTO distribution
     pto_bins = [0, 5, 10, 15, 20, 25, 30]
     pto_labels = ['0-5', '6-10', '11-15', '16-20', '21-25', '26+']
     pto_dist = pd.cut(employees_df[pto_column], bins=pto_bins, labels=pto_labels, include_lowest=True)
@@ -267,18 +262,15 @@ async def pto_overview():
 
 
 @app.route('/api/hr/ticket-analytics', methods=['GET'])
-async def ticket_analytics():
-    """Ticket analytics for HR dashboard"""
+def ticket_analytics():
+    """Ticket analytics"""
     if request.remote_addr not in hr_sessions:
         return jsonify({'error': 'Unauthorized'}), 401
     
     total_tickets = len(hr_tickets_df)
     avg_resolution = hr_tickets_df['Resolution Days'].mean()
-    
-    # Tickets by category
     category_counts = hr_tickets_df['Category'].value_counts().to_dict()
     
-    # Tickets per week (simplified)
     tickets_by_week = {
         'Week 1': 12,
         'Week 2': 8,
@@ -298,12 +290,11 @@ async def ticket_analytics():
 
 
 @app.route('/api/hr/emails', methods=['GET'])
-async def get_hr_emails():
+def get_hr_emails():
     """Get HR email inbox"""
     if request.remote_addr not in hr_sessions:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # Filter parameters
     status_filter = request.args.get('status', 'all')
     category_filter = request.args.get('category', 'all')
     
@@ -315,22 +306,18 @@ async def get_hr_emails():
     if category_filter != 'all':
         filtered_emails = filtered_emails[filtered_emails['Category'] == category_filter]
     
-    # Calculate stats
     total = len(hr_emails_df)
     pending = len(hr_emails_df[hr_emails_df['Status'] == 'Pending'])
     high_priority = len(hr_emails_df[hr_emails_df['Priority'] == 'High'])
     
-    # Overdue count
     today = pd.Timestamp.now()
     overdue = len(hr_emails_df[
         (hr_emails_df['Status'] == 'Pending') &
         (hr_emails_df['Response Due'] < today)
     ])
     
-    # Convert to records
     emails = filtered_emails.to_dict('records')
     
-    # Calculate days until due for each email
     for email in emails:
         if email['Status'] == 'Pending':
             due_date = pd.Timestamp(email['Response Due'])
@@ -352,29 +339,29 @@ async def get_hr_emails():
 
 
 @app.route('/')
-async def home():
+def home():
     """Serve frontend"""
     frontend_path = os.path.join(os.path.dirname(__file__), 'frontend.html')
     if os.path.exists(frontend_path):
-        return await send_file(frontend_path)
-    return "HR Agent Backend is running! Use /frontend.html or /hr_dashboard.html"
+        return send_file(frontend_path)
+    return "HR Agent Backend is running!"
 
 
 @app.route('/frontend.html')
-async def serve_frontend():
+def serve_frontend():
     """Serve employee portal"""
     frontend_path = os.path.join(os.path.dirname(__file__), 'frontend.html')
     if os.path.exists(frontend_path):
-        return await send_file(frontend_path)
+        return send_file(frontend_path)
     return "Frontend not found", 404
 
 
 @app.route('/hr_dashboard.html')
-async def serve_hr_dashboard():
+def serve_hr_dashboard():
     """Serve HR dashboard"""
     dashboard_path = os.path.join(os.path.dirname(__file__), 'hr_dashboard.html')
     if os.path.exists(dashboard_path):
-        return await send_file(dashboard_path)
+        return send_file(dashboard_path)
     return "HR Dashboard not found", 404
 
 
@@ -386,7 +373,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     
     print("\n" + "="*60)
-    print("🚀 HR Backend Server (Agents SDK)")
+    print("🚀 HR Backend Server (Agents SDK + Flask)")
     print("="*60)
     print(f"Agent: OpenAI Agents SDK")
     print(f"Model: gpt-4o-mini")
