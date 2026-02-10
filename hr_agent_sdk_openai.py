@@ -304,56 +304,69 @@ When using tools:
         - Full name: "Thomas Anderson"
         """
         try:
+            # Clean input
+            employee_id = str(employee_id).strip()
+            
             # Case 1: EID format (e.g., "EID2480001")
             # Search with string comparison (CSV has strings like "EID2480002")
             if employee_id.startswith('EID'):
-                # Convert Employee ID column to string for comparison
+                # Convert Employee ID column to string and strip whitespace
                 match = self.employees_df[
-                    self.employees_df['Employee ID'].astype(str) == employee_id
+                    self.employees_df['Employee ID'].astype(str).str.strip() == employee_id
                 ]
                 if not match.empty:
+                    print(f"✅ Found employee by EID: {employee_id}")
                     return match.iloc[0]
+                print(f"❌ No match for EID: {employee_id}")
             
             # Case 2: Pure numeric (e.g., "1", "2", "3")
             if employee_id.isdigit():
                 # Try as integer first
                 match = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)]
                 if not match.empty:
+                    print(f"✅ Found employee by numeric ID: {employee_id}")
                     return match.iloc[0]
                 # Try as string
                 match = self.employees_df[
-                    self.employees_df['Employee ID'].astype(str) == employee_id
+                    self.employees_df['Employee ID'].astype(str).str.strip() == employee_id
                 ]
                 if not match.empty:
+                    print(f"✅ Found employee by string ID: {employee_id}")
                     return match.iloc[0]
             
-            # Case 3: Name search (e.g., "Thomas" or "Thomas Anderson")
-            # Try exact match on Employee Name
+            # Case 3: Name search (e.g., "KobeBean" or "Thomas Anderson")
+            # Try exact match on First Name
+            if 'First Name' in self.employees_df.columns:
+                first_name_match = self.employees_df[
+                    self.employees_df['First Name'].astype(str).str.strip().str.lower() == employee_id.lower()
+                ]
+                if not first_name_match.empty:
+                    print(f"✅ Found employee by First Name: {employee_id}")
+                    return first_name_match.iloc[0]
+            
+            # Try exact match on Employee Name (if it exists)
             if 'Employee Name' in self.employees_df.columns:
                 name_match = self.employees_df[
-                    self.employees_df['Employee Name'].astype(str).str.lower() == employee_id.lower()
+                    self.employees_df['Employee Name'].astype(str).str.strip().str.lower() == employee_id.lower()
                 ]
                 if not name_match.empty:
+                    print(f"✅ Found employee by Employee Name: {employee_id}")
                     return name_match.iloc[0]
                 
                 # Try partial match on Employee Name (contains)
                 name_match = self.employees_df[
-                    self.employees_df['Employee Name'].astype(str).str.lower().str.contains(employee_id.lower(), na=False)
+                    self.employees_df['Employee Name'].astype(str).str.strip().str.lower().str.contains(employee_id.lower(), na=False)
                 ]
                 if not name_match.empty:
+                    print(f"✅ Found employee by partial name match: {employee_id}")
                     return name_match.iloc[0]
             
-            # Try First Name column if it exists
+            # Debug: Print what we're looking for and what's available
+            print(f"❌ Could not find employee: '{employee_id}'")
+            print(f"   Searched columns: {[col for col in self.employees_df.columns if 'name' in col.lower() or 'id' in col.lower()]}")
+            print(f"   First 5 Employee IDs: {list(self.employees_df['Employee ID'].astype(str).str.strip().head())}")
             if 'First Name' in self.employees_df.columns:
-                first_name_match = self.employees_df[
-                    self.employees_df['First Name'].astype(str).str.lower() == employee_id.lower()
-                ]
-                if not first_name_match.empty:
-                    return first_name_match.iloc[0]
-            
-            # Debug: Print what we're looking for
-            print(f"❌ Could not find employee: {employee_id}")
-            print(f"   Available IDs (first 5): {list(self.employees_df['Employee ID'].astype(str).head())}")
+                print(f"   First 5 First Names: {list(self.employees_df['First Name'].astype(str).str.strip().head())}")
             
             return None
             
