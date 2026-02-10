@@ -293,48 +293,69 @@ When using tools:
         Find employee by ID or name
         
         Handles:
-        - Numeric IDs: "1", "2", "3"
         - EID format: "EID2480001" 
+        - Numeric IDs: "1", "2", "3"
         - First name: "Thomas"
         - Full name: "Thomas Anderson"
         """
         try:
             # Case 1: EID format (e.g., "EID2480001")
+            # Search with string comparison (CSV has strings like "EID2480002")
             if employee_id.startswith('EID'):
-                numeric_id = employee_id#int(employee_id.replace('EID', ''))
-                return self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
+                # Convert Employee ID column to string for comparison
+                match = self.employees_df[
+                    self.employees_df['Employee ID'].astype(str) == employee_id
+                ]
+                if not match.empty:
+                    return match.iloc[0]
             
             # Case 2: Pure numeric (e.g., "1", "2", "3")
             if employee_id.isdigit():
-                return self.employees_df[self.employees_df['Employee ID'] == int(employee_id)].iloc[0]
+                # Try as integer first
+                match = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)]
+                if not match.empty:
+                    return match.iloc[0]
+                # Try as string
+                match = self.employees_df[
+                    self.employees_df['Employee ID'].astype(str) == employee_id
+                ]
+                if not match.empty:
+                    return match.iloc[0]
             
             # Case 3: Name search (e.g., "Thomas" or "Thomas Anderson")
             # Try exact match on Employee Name
-            name_match = self.employees_df[
-                self.employees_df['Employee Name'].str.lower() == employee_id.lower()
-            ]
-            if not name_match.empty:
-                return name_match.iloc[0]
-            
-            # Try partial match on Employee Name (contains)
-            name_match = self.employees_df[
-                self.employees_df['Employee Name'].str.lower().str.contains(employee_id.lower(), na=False)
-            ]
-            if not name_match.empty:
-                return name_match.iloc[0]
+            if 'Employee Name' in self.employees_df.columns:
+                name_match = self.employees_df[
+                    self.employees_df['Employee Name'].astype(str).str.lower() == employee_id.lower()
+                ]
+                if not name_match.empty:
+                    return name_match.iloc[0]
+                
+                # Try partial match on Employee Name (contains)
+                name_match = self.employees_df[
+                    self.employees_df['Employee Name'].astype(str).str.lower().str.contains(employee_id.lower(), na=False)
+                ]
+                if not name_match.empty:
+                    return name_match.iloc[0]
             
             # Try First Name column if it exists
             if 'First Name' in self.employees_df.columns:
                 first_name_match = self.employees_df[
-                    self.employees_df['First Name'].str.lower() == employee_id.lower()
+                    self.employees_df['First Name'].astype(str).str.lower() == employee_id.lower()
                 ]
                 if not first_name_match.empty:
                     return first_name_match.iloc[0]
             
+            # Debug: Print what we're looking for
+            print(f"❌ Could not find employee: {employee_id}")
+            print(f"   Available IDs (first 5): {list(self.employees_df['Employee ID'].astype(str).head())}")
+            
             return None
             
         except Exception as e:
-            print(f"Error finding employee: {e}")
+            print(f"❌ Error finding employee '{employee_id}': {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def get_pto_balance(self, employee_id: str) -> Dict[str, Any]:
