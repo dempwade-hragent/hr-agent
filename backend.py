@@ -3,14 +3,14 @@ Backend.py - OpenAI Agents SDK Version with Flask
 ===================================================
 
 Uses:
-- Flask (regular, not Quart) to avoid version compatibility bugs
+- Flask with proper session management
 - openai-agents package
 - asyncio.run() to call async agent methods
 
-ACTUALLY WORKS!
+ACTUALLY WORKS - Including HR Dashboard!
 """
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, session
 from flask_cors import CORS
 import pandas as pd
 import os
@@ -26,7 +26,8 @@ from w2_generator import W2Generator
 # ================================================================
 
 app = Flask(__name__)
-CORS(app)
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production-12345')
+CORS(app, supports_credentials=True)
 
 # ================================================================
 # LOAD DATA
@@ -69,8 +70,6 @@ except Exception as e:
     print(f"✗ Error initializing W-2 Generator: {e}")
     w2_gen = None
 
-# Simple in-memory session store
-hr_sessions = set()
 
 # ================================================================
 # API ENDPOINTS
@@ -224,12 +223,14 @@ def hr_login():
     
     # Simple auth
     if username == 'hr' and password == 'datadog2026':
-        hr_sessions.add(request.remote_addr)
+        session['is_hr'] = True
+        print(f"✅ HR login successful")
         return jsonify({
             'success': True,
             'message': 'Login successful'
         })
     
+    print(f"❌ HR login failed for username: {username}")
     return jsonify({
         'success': False,
         'error': 'Invalid credentials'
@@ -239,8 +240,11 @@ def hr_login():
 @app.route('/api/hr/pto-overview', methods=['GET'])
 def pto_overview():
     """PTO analytics"""
-    if request.remote_addr not in hr_sessions:
+    if not session.get('is_hr'):
+        print("❌ Unauthorized PTO request - not logged in as HR")
         return jsonify({'error': 'Unauthorized'}), 401
+    
+    print("✅ PTO overview request authorized")
     
     pto_column = 'Days Off Remaining' if 'Days Off Remaining' in employees_df.columns else 'Days Off'
     avg_pto = employees_df[pto_column].mean()
@@ -264,8 +268,11 @@ def pto_overview():
 @app.route('/api/hr/ticket-analytics', methods=['GET'])
 def ticket_analytics():
     """Ticket analytics"""
-    if request.remote_addr not in hr_sessions:
+    if not session.get('is_hr'):
+        print("❌ Unauthorized ticket analytics request")
         return jsonify({'error': 'Unauthorized'}), 401
+    
+    print("✅ Ticket analytics request authorized")
     
     total_tickets = len(hr_tickets_df)
     avg_resolution = hr_tickets_df['Resolution Days'].mean()
@@ -292,8 +299,11 @@ def ticket_analytics():
 @app.route('/api/hr/emails', methods=['GET'])
 def get_hr_emails():
     """Get HR email inbox"""
-    if request.remote_addr not in hr_sessions:
+    if not session.get('is_hr'):
+        print("❌ Unauthorized emails request")
         return jsonify({'error': 'Unauthorized'}), 401
+    
+    print("✅ Emails request authorized")
     
     status_filter = request.args.get('status', 'all')
     category_filter = request.args.get('category', 'all')
