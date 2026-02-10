@@ -1,7 +1,9 @@
-# Flask Backend
-Flask==3.0.0
-Flask-CORS==4.0.0
-gunicorn==21.2.0
+# Flask Backend (Async version for Agents SDK)
+Quart==0.19.4
+quart-cors==0.7.0
+
+# Production server
+hypercorn==0.16.0
 
 # Data Processing
 pandas>=2.2.0
@@ -9,8 +11,9 @@ pandas>=2.2.0
 # PDF Generation
 reportlab==4.0.7
 
-# OpenAI Agents SDK (NEW!)
+# OpenAI Agents SDK (NEW! 2025 version)
+# Note: The actual package name may vary - check PyPI for the correct package
+# This is the new Agents SDK, NOT the old openai package
 openai>=1.54.0
-
-# Optional: For email functionality
-# smtplib is built-in to Python
+# If there's a separate agents-sdk package, use that instead
+# agents-sdk>=1.0.0
