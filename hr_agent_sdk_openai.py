@@ -301,7 +301,7 @@ When using tools:
         try:
             # Case 1: EID format (e.g., "EID2480001")
             if employee_id.startswith('EID'):
-                numeric_id = int(employee_id.replace('EID', ''))
+                numeric_id = employee_id#int(employee_id.replace('EID', ''))
                 return self.employees_df[self.employees_df['Employee ID'] == numeric_id].iloc[0]
             
             # Case 2: Pure numeric (e.g., "1", "2", "3")
