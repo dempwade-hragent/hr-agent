@@ -1,711 +1,500 @@
 """
-HR Agent SDK - OpenAI Agents Version
-=====================================
+HR Agent SDK - OpenAI Agents SDK Version (2025)
+================================================
 
-REPLACES: hr_agent_sdk.py (regex-based)
+Uses the modern Agents SDK with:
+- Agent and Runner pattern
+- @function_tool decorators
+- RunContextWrapper for state management
+- Clean, maintainable code
 
 NO MORE:
-- Regex pattern matching
-- Manual intent detection
-- If/else chains
+- Manual Assistants API calls
+- Thread management
+- Complex error handling
 
-NOW:
-- OpenAI Assistants API
-- Automatic tool selection
-- Stateful conversations
+IT JUST WORKS! 🎉
 """
 
-from openai import OpenAI
+from agents import Agent, Runner, function_tool, RunContextWrapper
+from dataclasses import dataclass, field
+from typing import Optional
 import pandas as pd
 import json
-import time
-import os
-from typing import Dict, Any, Optional
-
-# Initialize OpenAI client with explicit API key check
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    raise ValueError(
-        "❌ OPENAI_API_KEY environment variable not set!\n"
-        "   Add it in Render Dashboard → Environment → Add Variable\n"
-        "   Get your key from: https://platform.openai.com/api-keys"
-    )
-
-if not api_key.startswith('sk-'):
-    raise ValueError(
-        f"❌ Invalid OPENAI_API_KEY format!\n"
-        f"   Key should start with 'sk-' but got: {api_key[:10]}...\n"
-        f"   Get a valid key from: https://platform.openai.com/api-keys"
-    )
-
-print(f"✓ OPENAI_API_KEY found: {api_key[:10]}...{api_key[-4:]}")
-
-try:
-    client = OpenAI(api_key=api_key)
-    print("✓ OpenAI client initialized successfully")
-except Exception as e:
-    raise ValueError(f"❌ Failed to initialize OpenAI client: {e}")
 
 
-class HRAgentOpenAI:
-    """HR Agent using OpenAI Assistants API"""
+# ================================================================
+# SHARED CONTEXT (State)
+# ================================================================
+
+@dataclass
+class HRContext:
+    """
+    Shared state for HR operations.
+    Contains employee data and health plan information.
+    """
+    employees_df: pd.DataFrame
+    health_plans_df: Optional[pd.DataFrame] = None
+    conversation_history: list[dict] = field(default_factory=list)
+
+
+# ================================================================
+# HELPER FUNCTION - Find Employee
+# ================================================================
+
+def find_employee(ctx: HRContext, employee_id: str) -> Optional[pd.Series]:
+    """
+    Smart employee finder that handles multiple formats:
+    - EID format: "EID2480001"
+    - Numeric: "1", "2", "3"
+    - First name: "Thomas", "KobeBean"
+    - Full name: "Thomas Anderson"
+    """
+    employee_id = str(employee_id).strip()
+    df = ctx.employees_df
     
-    def __init__(self, employees_df: pd.DataFrame, health_plans_df: Optional[pd.DataFrame] = None):
-        """
-        Initialize HR Agent with OpenAI Assistants API
-        
-        Args:
-            employees_df: DataFrame with employee data
-            health_plans_df: DataFrame with health insurance plans (optional)
-        """
-        self.employees_df = employees_df
-        self.health_plans = health_plans_df
-        
-        # DEBUG: Print employee data info
-        print(f"📊 Employee DataFrame columns: {list(employees_df.columns)}")
-        print(f"📊 First 5 Employee IDs: {list(employees_df['Employee ID'].astype(str).head())}")
-        print(f"📊 Employee ID dtype: {employees_df['Employee ID'].dtype}")
-        
-        # Create the assistant (agent)
-        self.assistant = self._create_assistant()
-        
-        # Track active threads per employee
-        self.active_threads = {}
-        
-        print(f"✅ OpenAI HR Agent initialized (Assistant ID: {self.assistant.id})")
+    # Case 1: EID format
+    if employee_id.startswith('EID'):
+        match = df[df['Employee ID'].astype(str).str.strip() == employee_id]
+        if not match.empty:
+            return match.iloc[0]
     
-    def _create_assistant(self):
-        """Create the OpenAI assistant with all HR tools"""
+    # Case 2: Numeric ID
+    if employee_id.isdigit():
+        match = df[df['Employee ID'].astype(str).str.strip() == employee_id]
+        if not match.empty:
+            return match.iloc[0]
+    
+    # Case 3: First Name
+    if 'First Name' in df.columns:
+        match = df[df['First Name'].astype(str).str.strip().str.lower() == employee_id.lower()]
+        if not match.empty:
+            return match.iloc[0]
+    
+    # Case 4: Employee Name (if exists)
+    if 'Employee Name' in df.columns:
+        match = df[df['Employee Name'].astype(str).str.strip().str.lower() == employee_id.lower()]
+        if not match.empty:
+            return match.iloc[0]
         
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_employee_salary",
-                    "description": "Get salary information for an employee. Use when asked about pay, compensation, or earnings.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "employee_id": {
-                                "type": "string",
-                                "description": "Employee's ID number"
-                            }
-                        },
-                        "required": ["employee_id"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_pto_balance",
-                    "description": "Get remaining PTO (paid time off) days. Use when asked about vacation, days off, or PTO.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "employee_id": {
-                                "type": "string",
-                                "description": "Employee's ID number"
-                            }
-                        },
-                        "required": ["employee_id"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_bonus_info",
-                    "description": "Get bonus percentage for an employee. Use when asked about bonuses or incentives.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "employee_id": {
-                                "type": "string",
-                                "description": "Employee's ID number"
-                            }
-                        },
-                        "required": ["employee_id"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_location",
-                    "description": "Get the office location where an employee works.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "employee_id": {
-                                "type": "string",
-                                "description": "Employee's ID number"
-                            }
-                        },
-                        "required": ["employee_id"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_team_info",
-                    "description": "Get the team/department an employee belongs to.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "employee_id": {
-                                "type": "string",
-                                "description": "Employee's ID number"
-                            }
-                        },
-                        "required": ["employee_id"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_manager_info",
-                    "description": "Get information about an employee's manager.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "employee_id": {
-                                "type": "string",
-                                "description": "Employee's ID number"
-                            }
-                        },
-                        "required": ["employee_id"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "get_health_insurance_plans",
-                    "description": "Get all available health insurance plans with costs and coverage details.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {},
-                        "required": []
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "generate_w2_request",
-                    "description": "Create a request to generate a W-2 tax form for an employee.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "employee_id": {
-                                "type": "string",
-                                "description": "Employee's ID number"
-                            }
-                        },
-                        "required": ["employee_id"]
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "escalate_to_hr",
-                    "description": "Draft an email to HR for requests that require human assistance or approval.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "employee_id": {
-                                "type": "string",
-                                "description": "Employee's ID number"
-                            },
-                            "subject": {
-                                "type": "string",
-                                "description": "Email subject line"
-                            },
-                            "request": {
-                                "type": "string",
-                                "description": "Detailed description of the request"
-                            }
-                        },
-                        "required": ["employee_id", "subject", "request"]
-                    }
-                }
-            }
-        ]
-        
-        assistant = client.beta.assistants.create(
-            name="HR Assistant",
-            instructions="""You are a helpful and professional HR assistant for company employees.
+        # Partial match
+        match = df[df['Employee Name'].astype(str).str.strip().str.lower().str.contains(employee_id.lower(), na=False)]
+        if not match.empty:
+            return match.iloc[0]
+    
+    return None
 
-You help with:
-- Salary and compensation information
+
+# ================================================================
+# FUNCTION TOOLS - Employee Information
+# ================================================================
+
+@function_tool
+def get_employee_salary(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+    """Get the salary for an employee.
+    
+    Args:
+        employee_id: Employee ID (e.g., 'EID2480001', '1', or first name like 'Thomas')
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    if employee is None:
+        return json.dumps({
+            'success': False,
+            'error': f'Employee not found: {employee_id}'
+        })
+    
+    name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+    salary = employee.get('Salary', 0)
+    
+    return json.dumps({
+        'success': True,
+        'name': name,
+        'salary': int(salary),
+        'formatted_salary': f'${int(salary):,}'
+    })
+
+
+@function_tool
+def get_pto_balance(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+    """Get remaining PTO (paid time off) days for an employee.
+    
+    Args:
+        employee_id: Employee ID (e.g., 'EID2480001', '1', or first name like 'Thomas')
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    if employee is None:
+        return json.dumps({
+            'success': False,
+            'error': f'Employee not found: {employee_id}'
+        })
+    
+    name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+    days_off = employee.get('Days Off Remaining', employee.get('Days Off', 0))
+    
+    return json.dumps({
+        'success': True,
+        'name': name,
+        'days_remaining': int(days_off)
+    })
+
+
+@function_tool
+def get_bonus_info(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+    """Get bonus percentage for an employee.
+    
+    Args:
+        employee_id: Employee ID (e.g., 'EID2480001', '1', or first name like 'Thomas')
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    if employee is None:
+        return json.dumps({
+            'success': False,
+            'error': f'Employee not found: {employee_id}'
+        })
+    
+    name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+    bonus_pct = employee.get('Bonus %', 0)
+    salary = employee.get('Salary', 0)
+    bonus_amount = int(salary) * int(bonus_pct) / 100
+    
+    return json.dumps({
+        'success': True,
+        'name': name,
+        'bonus_percentage': int(bonus_pct),
+        'bonus_amount': int(bonus_amount),
+        'formatted_bonus': f'${int(bonus_amount):,}'
+    })
+
+
+@function_tool
+def get_location(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+    """Get the office location where an employee works.
+    
+    Args:
+        employee_id: Employee ID (e.g., 'EID2480001', '1', or first name like 'Thomas')
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    if employee is None:
+        return json.dumps({
+            'success': False,
+            'error': f'Employee not found: {employee_id}'
+        })
+    
+    name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+    location = employee.get('Location', 'Unknown')
+    on_site = employee.get('On-site', 'Unknown')
+    
+    return json.dumps({
+        'success': True,
+        'name': name,
+        'location': location,
+        'on_site': on_site
+    })
+
+
+@function_tool
+def get_team_info(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+    """Get the team/department an employee belongs to.
+    
+    Args:
+        employee_id: Employee ID (e.g., 'EID2480001', '1', or first name like 'Thomas')
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    if employee is None:
+        return json.dumps({
+            'success': False,
+            'error': f'Employee not found: {employee_id}'
+        })
+    
+    name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+    team = employee.get('Team', 'Unknown')
+    
+    return json.dumps({
+        'success': True,
+        'name': name,
+        'team': team
+    })
+
+
+@function_tool
+def get_manager_info(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+    """Get information about an employee's manager.
+    
+    Args:
+        employee_id: Employee ID (e.g., 'EID2480001', '1', or first name like 'Thomas')
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    if employee is None:
+        return json.dumps({
+            'success': False,
+            'error': f'Employee not found: {employee_id}'
+        })
+    
+    name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+    
+    # Try different column names for manager
+    manager = employee.get('Manager', employee.get('Manager Name', 'Unknown'))
+    
+    return json.dumps({
+        'success': True,
+        'name': name,
+        'manager': manager
+    })
+
+
+@function_tool
+def get_health_insurance_plans(ctx: RunContextWrapper[HRContext]) -> str:
+    """Get all available health insurance plans with costs and coverage.
+    
+    No arguments needed - returns all plans.
+    """
+    if ctx.context.health_plans_df is None:
+        return json.dumps({
+            'success': False,
+            'error': 'Health plans data not available'
+        })
+    
+    plans = []
+    for _, plan in ctx.context.health_plans_df.iterrows():
+        plans.append({
+            'name': plan['Plan Name'],
+            'type': plan['Plan Type'],
+            'employee_monthly': float(plan['Employee Cost (Monthly)']),
+            'family_monthly': float(plan['Family Cost (Monthly)']),
+            'deductible': float(plan['Deductible'])
+        })
+    
+    return json.dumps({
+        'success': True,
+        'plans': plans
+    })
+
+
+@function_tool
+def request_w2_form(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+    """Request W-2 tax form generation for an employee.
+    
+    Args:
+        employee_id: Employee ID (e.g., 'EID2480001', '1', or first name like 'Thomas')
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    if employee is None:
+        return json.dumps({
+            'success': False,
+            'error': f'Employee not found: {employee_id}'
+        })
+    
+    name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+    emp_id = employee.get('Employee ID', 'Unknown')
+    
+    return json.dumps({
+        'success': True,
+        'action': 'w2_generation',
+        'name': name,
+        'employee_id': str(emp_id),
+        'message': 'W-2 tax form generation initiated. You will receive a download link shortly.'
+    })
+
+
+@function_tool
+def escalate_to_hr(ctx: RunContextWrapper[HRContext], employee_id: str, subject: str, message: str) -> str:
+    """Draft an email to HR for requests requiring human assistance.
+    
+    Args:
+        employee_id: Employee ID (e.g., 'EID2480001', '1', or first name like 'Thomas')
+        subject: Email subject line
+        message: Detailed message describing the request
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    name = 'Unknown'
+    if employee is not None:
+        name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+    
+    return json.dumps({
+        'success': True,
+        'action': 'email_hr',
+        'employee_id': employee_id,
+        'name': name,
+        'subject': subject,
+        'message': message,
+        'recipient': 'hr@company.com'
+    })
+
+
+# ================================================================
+# MAIN HR AGENT
+# ================================================================
+
+hr_agent = Agent(
+    name="HR Assistant",
+    instructions="""You are a helpful and professional HR assistant.
+
+You help employees with:
+- Salary and compensation questions
 - PTO/vacation balance inquiries
 - Bonus information
-- Office locations
-- Team and manager information
+- Office locations and team information
+- Manager details
 - Health insurance plan comparisons
 - W-2 tax form requests
 - Escalating complex requests to HR
 
 Guidelines:
 - Always be friendly, professional, and concise
-- Use the employee's name when you have it
-- Format currency as $XX,XXX with commas
-- When showing health plans, create a clear comparison
+- When you use a tool and get employee information, use their name in your response
+- Format currency with commas (e.g., $120,000 not 120000)
+- If you get an error that employee wasn't found, politely ask them to verify their employee ID
+- When showing health insurance plans, create a clear comparison
 - If you cannot help directly, offer to escalate to HR
-- Never make up information - only use data from tools
-- Keep responses under 100 words unless asked for details
+- Keep responses natural and conversational, not robotic
 
-When using tools:
-- Always pass the employee_id parameter
-- Interpret results and format them nicely
-- If a tool returns an error, apologize and offer alternatives
+Important:
+- The tools return JSON strings - parse them to extract the data
+- Check the 'success' field in tool responses before using the data
+- If success is False, tell the user there was an error and offer alternatives
 """,
-            model="gpt-4o-mini",  # Cost-effective choice
-            tools=tools
-        )
-        
-        return assistant
+    tools=[
+        get_employee_salary,
+        get_pto_balance,
+        get_bonus_info,
+        get_location,
+        get_team_info,
+        get_manager_info,
+        get_health_insurance_plans,
+        request_w2_form,
+        escalate_to_hr,
+    ],
+    model="gpt-4o-mini",  # Cost-effective and fast
+)
+
+
+# ================================================================
+# MAIN INTERFACE
+# ================================================================
+
+class HRAgentSystem:
+    """
+    Main interface for the HR Agent system.
+    Handles initialization and chat interactions.
+    """
     
-    # ================================================================
-    # TOOL IMPLEMENTATIONS (Called by OpenAI Agent)
-    # ================================================================
-    
-    def get_employee_salary(self, employee_id: str) -> Dict[str, Any]:
-        """Get salary for an employee"""
-        try:
-            # Try to find employee by ID or name
-            employee = self._find_employee(employee_id)
-            
-            if employee is None:
-                return {'success': False, 'error': f'Employee not found: {employee_id}'}
-            
-            return {
-                'success': True,
-                'employee_id': employee_id,
-                'name': employee['Employee Name'],
-                'salary': int(employee['Salary'])
-            }
-        except (IndexError, KeyError, ValueError) as e:
-            return {'success': False, 'error': f'Employee not found: {employee_id}'}
-    
-    def _find_employee(self, employee_id: str):
+    def __init__(self, employees_df: pd.DataFrame, health_plans_df: Optional[pd.DataFrame] = None):
         """
-        Find employee by ID or name
-        
-        Handles:
-        - EID format: "EID2480001" 
-        - Numeric IDs: "1", "2", "3"
-        - First name: "Thomas"
-        - Full name: "Thomas Anderson"
-        """
-        try:
-            # Clean input
-            employee_id = str(employee_id).strip()
-            
-            # Case 1: EID format (e.g., "EID2480001")
-            # Search with string comparison (CSV has strings like "EID2480002")
-            if employee_id.startswith('EID'):
-                # Convert Employee ID column to string and strip whitespace
-                match = self.employees_df[
-                    self.employees_df['Employee ID'].astype(str).str.strip() == employee_id
-                ]
-                if not match.empty:
-                    print(f"✅ Found employee by EID: {employee_id}")
-                    return match.iloc[0]
-                print(f"❌ No match for EID: {employee_id}")
-            
-            # Case 2: Pure numeric (e.g., "1", "2", "3")
-            if employee_id.isdigit():
-                # Try as integer first
-                match = self.employees_df[self.employees_df['Employee ID'] == int(employee_id)]
-                if not match.empty:
-                    print(f"✅ Found employee by numeric ID: {employee_id}")
-                    return match.iloc[0]
-                # Try as string
-                match = self.employees_df[
-                    self.employees_df['Employee ID'].astype(str).str.strip() == employee_id
-                ]
-                if not match.empty:
-                    print(f"✅ Found employee by string ID: {employee_id}")
-                    return match.iloc[0]
-            
-            # Case 3: Name search (e.g., "KobeBean" or "Thomas Anderson")
-            # Try exact match on First Name
-            if 'First Name' in self.employees_df.columns:
-                first_name_match = self.employees_df[
-                    self.employees_df['First Name'].astype(str).str.strip().str.lower() == employee_id.lower()
-                ]
-                if not first_name_match.empty:
-                    print(f"✅ Found employee by First Name: {employee_id}")
-                    return first_name_match.iloc[0]
-            
-            # Try exact match on Employee Name (if it exists)
-            if 'Employee Name' in self.employees_df.columns:
-                name_match = self.employees_df[
-                    self.employees_df['Employee Name'].astype(str).str.strip().str.lower() == employee_id.lower()
-                ]
-                if not name_match.empty:
-                    print(f"✅ Found employee by Employee Name: {employee_id}")
-                    return name_match.iloc[0]
-                
-                # Try partial match on Employee Name (contains)
-                name_match = self.employees_df[
-                    self.employees_df['Employee Name'].astype(str).str.strip().str.lower().str.contains(employee_id.lower(), na=False)
-                ]
-                if not name_match.empty:
-                    print(f"✅ Found employee by partial name match: {employee_id}")
-                    return name_match.iloc[0]
-            
-            # Debug: Print what we're looking for and what's available
-            print(f"❌ Could not find employee: '{employee_id}'")
-            print(f"   Searched columns: {[col for col in self.employees_df.columns if 'name' in col.lower() or 'id' in col.lower()]}")
-            print(f"   First 5 Employee IDs: {list(self.employees_df['Employee ID'].astype(str).str.strip().head())}")
-            if 'First Name' in self.employees_df.columns:
-                print(f"   First 5 First Names: {list(self.employees_df['First Name'].astype(str).str.strip().head())}")
-            
-            return None
-            
-        except Exception as e:
-            print(f"❌ Error finding employee '{employee_id}': {e}")
-            import traceback
-            traceback.print_exc()
-            return None
-    
-    def get_pto_balance(self, employee_id: str) -> Dict[str, Any]:
-        """Get PTO balance for an employee"""
-        try:
-            employee = self._find_employee(employee_id)
-            
-            if employee is None:
-                return {'success': False, 'error': f'Employee not found: {employee_id}'}
-            
-            return {
-                'success': True,
-                'employee_id': employee_id,
-                'name': employee['Employee Name'],
-                'days_remaining': int(employee['Days Off'])
-            }
-        except (IndexError, KeyError, ValueError) as e:
-            return {'success': False, 'error': f'Employee not found: {employee_id}'}
-    
-    def get_bonus_info(self, employee_id: str) -> Dict[str, Any]:
-        """Get bonus percentage for an employee"""
-        try:
-            employee = self._find_employee(employee_id)
-            
-            if employee is None:
-                return {'success': False, 'error': f'Employee not found: {employee_id}'}
-            
-            return {
-                'success': True,
-                'employee_id': employee_id,
-                'name': employee['Employee Name'],
-                'bonus_percentage': int(employee['Bonus %'])
-            }
-        except (IndexError, KeyError, ValueError) as e:
-            return {'success': False, 'error': f'Employee not found: {employee_id}'}
-    
-    def get_location(self, employee_id: str) -> Dict[str, Any]:
-        """Get employee's office location"""
-        try:
-            employee = self._find_employee(employee_id)
-            
-            if employee is None:
-                return {'success': False, 'error': f'Employee not found: {employee_id}'}
-            
-            return {
-                'success': True,
-                'employee_id': employee_id,
-                'name': employee['Employee Name'],
-                'location': employee['Location']
-            }
-        except (IndexError, KeyError, ValueError) as e:
-            return {'success': False, 'error': f'Employee not found: {employee_id}'}
-    
-    def get_team_info(self, employee_id: str) -> Dict[str, Any]:
-        """Get employee's team/department"""
-        try:
-            employee = self._find_employee(employee_id)
-            
-            if employee is None:
-                return {'success': False, 'error': f'Employee not found: {employee_id}'}
-            
-            return {
-                'success': True,
-                'employee_id': employee_id,
-                'name': employee['Employee Name'],
-                'team': employee['Team']
-            }
-        except (IndexError, KeyError, ValueError) as e:
-            return {'success': False, 'error': f'Employee not found: {employee_id}'}
-    
-    def get_manager_info(self, employee_id: str) -> Dict[str, Any]:
-        """Get employee's manager information"""
-        try:
-            employee = self._find_employee(employee_id)
-            
-            if employee is None:
-                return {'success': False, 'error': f'Employee not found: {employee_id}'}
-            
-            return {
-                'success': True,
-                'employee_id': employee_id,
-                'name': employee['Employee Name'],
-                'manager': employee['Manager']
-            }
-        except (IndexError, KeyError, ValueError) as e:
-            return {'success': False, 'error': f'Employee not found: {employee_id}'}
-    
-    def get_health_insurance_plans(self) -> Dict[str, Any]:
-        """Get all health insurance plans"""
-        if self.health_plans is None:
-            return {'success': False, 'error': 'Health plans data not available'}
-        
-        plans = []
-        for _, plan in self.health_plans.iterrows():
-            plans.append({
-                'name': plan['Plan Name'],
-                'type': plan['Plan Type'],
-                'employee_monthly': float(plan['Employee Cost (Monthly)']),
-                'family_monthly': float(plan['Family Cost (Monthly)']),
-                'deductible': float(plan['Deductible'])
-            })
-        
-        return {'success': True, 'plans': plans}
-    
-    def generate_w2_request(self, employee_id: str) -> Dict[str, Any]:
-        """Generate W-2 request (will be handled by backend)"""
-        try:
-            employee = self._find_employee(employee_id)
-            
-            if employee is None:
-                return {'success': False, 'error': f'Employee not found: {employee_id}'}
-            
-            return {
-                'success': True,
-                'action': 'w2_generation',
-                'employee_id': employee_id,
-                'name': employee['Employee Name'],
-                'message': 'W-2 generation initiated. You will receive a download link shortly.'
-            }
-        except (IndexError, KeyError, ValueError) as e:
-            return {'success': False, 'error': f'Employee not found: {employee_id}'}
-    
-    def escalate_to_hr(self, employee_id: str, subject: str, request: str) -> Dict[str, Any]:
-        """Escalate request to HR"""
-        return {
-            'success': True,
-            'action': 'email_hr',
-            'employee_id': employee_id,
-            'subject': subject,
-            'message': request,
-            'recipient': 'hr@company.com',
-            'status': 'draft_created'
-        }
-    
-    # ================================================================
-    # MAIN CHAT INTERFACE
-    # ================================================================
-    
-    def chat(self, employee_id: str, message: str, session_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Main chat interface - handles everything automatically!
-        
-        NO REGEX! NO INTENT DETECTION!
-        OpenAI agent decides what to do.
+        Initialize the HR Agent system.
         
         Args:
-            employee_id: Employee ID asking the question
-            message: User's question
-            session_id: Optional session ID for conversation continuity
+            employees_df: DataFrame containing employee data
+            health_plans_df: Optional DataFrame containing health insurance plans
+        """
+        self.context = HRContext(
+            employees_df=employees_df,
+            health_plans_df=health_plans_df
+        )
+        
+        print(f"✅ HR Agent System initialized")
+        print(f"   Employees loaded: {len(employees_df)}")
+        print(f"   Employee ID format: {employees_df['Employee ID'].dtype}")
+        print(f"   Sample IDs: {list(employees_df['Employee ID'].astype(str).head(3))}")
+    
+    async def chat(self, employee_id: str, message: str) -> dict:
+        """
+        Send a message to the HR agent.
+        
+        Args:
+            employee_id: The employee asking the question
+            message: The employee's question
         
         Returns:
-            Response dict with answer and metadata
+            Dict with 'success' and 'response' fields
         """
-        
-        # Get or create thread for this session
-        thread_id = self._get_or_create_thread(session_id or employee_id)
-        
-        # CRITICAL: Check if there's an active run and wait for it to complete
-        self._wait_for_thread_ready(thread_id)
-        
-        # Add user message to thread
-        client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role="user",
-            content=f"[Employee ID: {employee_id}] {message}"
-        )
-        
-        # Run the assistant
-        run = client.beta.threads.runs.create(
-            thread_id=thread_id,
-            assistant_id=self.assistant.id
-        )
-        
-        # Wait for completion and handle tool calls
-        response_text = self._wait_for_response(thread_id, run.id, employee_id)
-        
-        return {
-            'success': True,
-            'response': response_text,
-            'method': 'openai_agents_sdk',
-            'thread_id': thread_id
-        }
-    
-    def _wait_for_thread_ready(self, thread_id: str, max_wait: int = 30) -> None:
-        """
-        Wait for any active runs on the thread to complete before adding new messages.
-        
-        Args:
-            thread_id: The thread to check
-            max_wait: Maximum seconds to wait (default 30)
-        """
-        start_time = time.time()
-        
-        while time.time() - start_time < max_wait:
-            try:
-                # Get all runs for this thread
-                runs = client.beta.threads.runs.list(thread_id=thread_id, limit=1)
-                
-                if not runs.data:
-                    # No runs exist, thread is ready
-                    return
-                
-                latest_run = runs.data[0]
-                
-                # Check if the latest run is still active
-                if latest_run.status in ['queued', 'in_progress', 'requires_action']:
-                    print(f"⏳ Thread busy (status: {latest_run.status}), waiting...")
-                    time.sleep(1)
-                    continue
-                else:
-                    # Run is completed/failed/cancelled, thread is ready
-                    return
-                    
-            except Exception as e:
-                print(f"Error checking thread status: {e}")
-                time.sleep(1)
-        
-        # If we get here, we've waited too long
-        print(f"⚠️  Thread still busy after {max_wait}s, proceeding anyway...")
-        return
-    
-    def _get_or_create_thread(self, session_id: str) -> str:
-        """Get existing thread or create new one"""
-        if session_id not in self.active_threads:
-            thread = client.beta.threads.create()
-            self.active_threads[session_id] = thread.id
-        
-        return self.active_threads[session_id]
-    
-    def _wait_for_response(self, thread_id: str, run_id: str, employee_id: str) -> str:
-        """Wait for agent to complete and handle tool calls"""
-        
-        # Map function names to methods
-        function_map = {
-            'get_employee_salary': self.get_employee_salary,
-            'get_pto_balance': self.get_pto_balance,
-            'get_bonus_info': self.get_bonus_info,
-            'get_location': self.get_location,
-            'get_team_info': self.get_team_info,
-            'get_manager_info': self.get_manager_info,
-            'get_health_insurance_plans': self.get_health_insurance_plans,
-            'generate_w2_request': self.generate_w2_request,
-            'escalate_to_hr': self.escalate_to_hr,
-        }
-        
-        max_iterations = 30  # Prevent infinite loops
-        iteration = 0
-        
-        while iteration < max_iterations:
-            iteration += 1
-            
-            try:
-                run_status = client.beta.threads.runs.retrieve(
-                    thread_id=thread_id,
-                    run_id=run_id
-                )
-            except Exception as e:
-                print(f"Error retrieving run status: {e}")
-                time.sleep(1)
-                continue
-            
-            if run_status.status == 'requires_action':
-                # Agent wants to call tools
-                tool_outputs = []
-                
-                for tool_call in run_status.required_action.submit_tool_outputs.tool_calls:
-                    function_name = tool_call.function.name
-                    function_args = json.loads(tool_call.function.arguments)
-                    
-                    # Execute the function
-                    function_to_call = function_map.get(function_name)
-                    if function_to_call:
-                        result = function_to_call(**function_args)
-                        tool_outputs.append({
-                            'tool_call_id': tool_call.id,
-                            'output': json.dumps(result)
-                        })
-                
-                # Submit results back to agent
-                try:
-                    client.beta.threads.runs.submit_tool_outputs(
-                        thread_id=thread_id,
-                        run_id=run_id,
-                        tool_outputs=tool_outputs
-                    )
-                except Exception as e:
-                    print(f"Error submitting tool outputs: {e}")
-                    return f"I encountered an error processing your request. Please try again."
-            
-            elif run_status.status == 'completed':
-                # Get the response
-                messages = client.beta.threads.messages.list(thread_id=thread_id)
-                return messages.data[0].content[0].text.value
-            
-            elif run_status.status in ['failed', 'cancelled', 'expired']:
-                print(f"Run status: {run_status.status}")
-                return f"I apologize, but I encountered an error processing your request. Please try again."
-            
-            time.sleep(0.5)
-        
-        return "Request timed out. Please try asking your question again."
-    
-    def cleanup(self):
-        """Clean up resources"""
         try:
-            client.beta.assistants.delete(self.assistant.id)
-            print(f"✅ Cleaned up assistant {self.assistant.id}")
+            # Construct the full message with employee context
+            full_message = f"[Employee ID: {employee_id}] {message}"
+            
+            # Run the agent
+            result = await Runner.run(
+                hr_agent,
+                input=full_message,
+                context=self.context
+            )
+            
+            return {
+                'success': True,
+                'response': result.final_output,
+                'method': 'openai_agents_sdk_2025'
+            }
+        
         except Exception as e:
-            print(f"⚠️  Error cleaning up: {e}")
+            print(f"❌ Error in chat: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            return {
+                'success': False,
+                'response': "I apologize, but I encountered an error processing your request. Please try again.",
+                'error': str(e)
+            }
 
 
 # ================================================================
-# BACKWARDS COMPATIBILITY (For gradual migration)
+# EXAMPLE USAGE
 # ================================================================
 
-class HRAgentSDK(HRAgentOpenAI):
-    """
-    Backwards compatible wrapper
+async def demo():
+    """Demo the HR Agent system"""
     
-    Provides same interface as old regex-based hr_agent_sdk.py
-    but uses OpenAI Agents under the hood!
-    """
+    # Create sample employee data
+    sample_employees = pd.DataFrame({
+        'Employee ID': ['EID2480001', 'EID2480002', 'EID2480003'],
+        'First Name': ['Thomas', 'Sarah', 'KobeBean'],
+        'Salary': [120000, 95000, 150000],
+        'Bonus %': [10, 8, 15],
+        'Days Off Remaining': [15, 8, 20],
+        'Team': ['Engineering', 'Sales', 'Product'],
+        'Location': ['New York', 'San Francisco', 'Austin'],
+        'On-site': ['Hybrid', 'Remote', 'On-site']
+    })
     
-    def answer_question(self, question: str, employee_id: str) -> str:
-        """
-        Legacy interface for compatibility
+    sample_health_plans = pd.DataFrame({
+        'Plan Name': ['Blue Shield PPO Gold', 'Kaiser HMO Silver'],
+        'Plan Type': ['PPO', 'HMO'],
+        'Employee Cost (Monthly)': [250, 150],
+        'Family Cost (Monthly)': [650, 400],
+        'Deductible': [500, 1000]
+    })
+    
+    # Initialize system
+    hr_system = HRAgentSystem(
+        employees_df=sample_employees,
+        health_plans_df=sample_health_plans
+    )
+    
+    # Test questions
+    questions = [
+        ("EID2480001", "What's my salary?"),
+        ("Thomas", "How many PTO days do I have?"),
+        ("EID2480003", "What's my bonus?"),
+        ("Sarah", "What are the health insurance options?"),
+    ]
+    
+    for emp_id, question in questions:
+        print(f"\n{'='*60}")
+        print(f"Employee: {emp_id}")
+        print(f"Question: {question}")
+        print(f"{'='*60}")
         
-        Old code:
-            agent = HRAgentSDK(df)
-            response = agent.answer_question("What's my salary?", "1")
-        
-        Still works! Now powered by OpenAI Agents.
-        """
-        result = self.chat(employee_id, question)
-        return result['response']
+        response = await hr_system.chat(emp_id, question)
+        print(f"\nResponse: {response['response']}\n")
+
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(demo())
