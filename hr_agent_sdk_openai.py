@@ -62,6 +62,11 @@ class HRAgentOpenAI:
         self.employees_df = employees_df
         self.health_plans = health_plans_df
         
+        # DEBUG: Print employee data info
+        print(f"📊 Employee DataFrame columns: {list(employees_df.columns)}")
+        print(f"📊 First 5 Employee IDs: {list(employees_df['Employee ID'].astype(str).head())}")
+        print(f"📊 Employee ID dtype: {employees_df['Employee ID'].dtype}")
+        
         # Create the assistant (agent)
         self.assistant = self._create_assistant()
         
