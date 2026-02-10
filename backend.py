@@ -18,7 +18,7 @@ from datetime import datetime
 import asyncio
 
 # NEW: Import the modern HR Agent system
-from hr_agent_sdk_new import HRAgentSystem
+from hr_agent_sdk_openai import HRAgentSystem
 from w2_generator import W2Generator
 
 app = Quart(__name__)
