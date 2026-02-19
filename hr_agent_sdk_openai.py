@@ -286,6 +286,54 @@ def request_w2_form(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
 
 
 @function_tool
+def email_manager(ctx: RunContextWrapper[HRContext], employee_id: str, subject: str, message: str) -> str:
+    """Draft an email to the employee's manager. Use when employee asks to email their manager.
+    
+    Common uses:
+    - PTO requests
+    - Status updates
+    - Questions for manager
+    - Any communication with direct manager
+    
+    Args:
+        employee_id: Employee ID
+        subject: Email subject line (e.g., "PTO Request for Tomorrow", "Question About Project X")
+        message: The email body - include all relevant context from the conversation
+    """
+    employee = find_employee(ctx.context, employee_id)
+    
+    employee_name = 'Unknown Employee'
+    manager_name = 'Your Manager'
+    emp_id_display = employee_id
+    
+    if employee is not None:
+        employee_name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+        emp_id_display = employee.get('Employee ID', employee_id)
+        manager_name = employee.get('Manager', employee.get('Manager Name', 'Your Manager'))
+    
+    # Create a formatted email draft
+    email_body = f"""To: {manager_name}
+From: {employee_name}
+Subject: {subject}
+
+{message}
+
+Best regards,
+{employee_name}"""
+    
+    return json.dumps({
+        'success': True,
+        'action': 'email_manager',
+        'employee_id': employee_id,
+        'employee_name': employee_name,
+        'manager_name': manager_name,
+        'subject': subject,
+        'message': message,
+        'email_draft': email_body
+    })
+
+
+@function_tool
 def schedule_hr_meeting(ctx: RunContextWrapper[HRContext], employee_id: str, reason: str) -> str:
     """Schedule a meeting with HR. Use when employee asks to meet with HR or schedule a calendar meeting.
     
@@ -400,13 +448,34 @@ WHAT YOU CAN DO:
 - Answer: salary, PTO balance, bonus, location, team, manager
 - Show health insurance plans: Use get_health_insurance_plans to show all available plans with costs
 - Generate: W-2 forms
+- Email manager: Draft emails to employee's manager (PTO requests, questions, updates)
 - Schedule: meetings with HR (use schedule_hr_meeting tool)
 
 WHAT YOU CANNOT DO (ESCALATE THESE):
 - Approve raises or salary changes
 - Enroll in or change health insurance plans
-- Approve PTO/vacation requests
+- Approve PTO/vacation requests (only managers can approve)
 - Make policy decisions
+
+EMAILING YOUR MANAGER:
+When user asks to "email my manager" or "help me email my manager":
+- Use email_manager tool
+- For PTO requests: Include how many days, when, and any context from conversation
+- Show them the email draft
+
+Example PTO request email:
+User: "Can I take a day off tomorrow?"
+You: "You have 13 PTO days remaining. To request time off, ask your manager for approval."
+User: "Can you help me email my manager?"
+You: [call email_manager with subject: "PTO Request for Tomorrow", message: "I would like to request a day off tomorrow, [date]. I currently have 13 PTO days remaining. Please let me know if this works. Thank you!"]
+You: "Here's the email draft:
+
+To: [Manager Name]
+From: [Employee Name]
+Subject: PTO Request for Tomorrow
+
+I would like to request a day off tomorrow, [date]. I currently have 13 PTO days remaining. Please let me know if this works. Thank you!
+..."
 
 HEALTH INSURANCE:
 When user asks "what are my health insurance options" or "show me health plans":
@@ -446,6 +515,22 @@ When user asks for something you can't do (raise, policy change):
 3. Show the email draft
 
 Example conversations:
+
+User: "Can I take a day off tomorrow?"
+You: "You have 13 PTO days remaining. To request time off, ask your manager for approval."
+User: "Can you help me email my manager?"
+You: [call email_manager with subject: "PTO Request for Tomorrow", message: "I would like to request a day off tomorrow, February 20th, 2026. I currently have 13 PTO days remaining. Please let me know if this works. Thank you!"]
+You: "Here's the email draft:
+
+To: [Manager Name]
+From: [Employee Name]
+Subject: PTO Request for Tomorrow
+
+I would like to request a day off tomorrow, February 20th, 2026. I currently have 13 PTO days remaining. Please let me know if this works. Thank you!
+
+Best regards,
+[Employee Name]"
+
 User: "What are my health insurance options?"
 You: [call get_health_insurance_plans]
 You: "Here are the available health insurance plans:
@@ -472,12 +557,14 @@ CRITICAL RULES:
 - NEVER approve PTO, raises, or any requests requiring manager/HR approval
 - NEVER escalate simple questions you have tools for (salary, PTO, health plan OPTIONS)
 - ONLY escalate when user wants to CHANGE something (enroll, raise, etc.)
+- When user asks to "email my manager", use email_manager tool (not escalate_to_hr or schedule_hr_meeting)
+- For manager emails: Include context from recent conversation (like PTO details)
 - NEVER ask the user to verify their employee ID - you already have it from the system
 - NEVER ask for "more details" on escalations - just escalate with what they said
 - NEVER say "I can help with that" - just help
 - Tools return JSON - parse it and extract data
-- For escalations/meetings: Parse the JSON, extract 'email_draft' field, and SHOW IT to the user
-- When showing email drafts, say "Here's the email:" then show the FULL email_draft content
+- For escalations/meetings/manager emails: Parse the JSON, extract 'email_draft' field, and SHOW IT to the user
+- When showing email drafts, say "Here's the email draft:" then show the FULL email_draft content
 
 Be efficient. Be direct. Get it done.
 """,
@@ -490,6 +577,7 @@ Be efficient. Be direct. Get it done.
         get_manager_info,
         get_health_insurance_plans,
         request_w2_form,
+        email_manager,
         schedule_hr_meeting,
         escalate_to_hr,
     ],
