@@ -145,6 +145,96 @@
         .logout-btn:hover {
             background: #d32f2f;
         }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: #f5f5f5;
+        }
+
+        .tab.active {
+            background: #632CA6;
+            color: white;
+        }
+
+        .email-list {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .email-item {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .email-item:hover {
+            background: #f9f9f9;
+        }
+
+        .email-item.high-priority {
+            border-left: 4px solid #f44336;
+        }
+
+        .email-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .email-from {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .email-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .email-status.pending {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .email-status.resolved {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .email-subject {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .email-preview {
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -160,11 +250,13 @@
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
             const [loading, setLoading] = useState(false);
+            const [activeTab, setActiveTab] = useState('analytics');
             
             // Data states
             const [ptoData, setPtoData] = useState(null);
             const [ticketData, setTicketData] = useState(null);
             const [emailsData, setEmailsData] = useState(null);
+            const [selectedEmail, setSelectedEmail] = useState(null);
 
             // Check localStorage for existing auth
             useEffect(() => {
@@ -317,54 +409,108 @@
 
                     {error && <div className="error">{error}</div>}
 
-                    <div className="stats-grid">
-                        <div className="stat-card">
-                            <h3>Total Employees</h3>
-                            <div className="value">
-                                {ptoData?.total_employees || '---'}
-                            </div>
-                        </div>
-
-                        <div className="stat-card">
-                            <h3>Average PTO Remaining</h3>
-                            <div className="value">
-                                {ptoData?.average_pto ? `${ptoData.average_pto} days` : '---'}
-                            </div>
-                        </div>
-
-                        <div className="stat-card">
-                            <h3>Total HR Tickets</h3>
-                            <div className="value">
-                                {ticketData?.total_tickets || '---'}
-                            </div>
-                        </div>
-
-                        <div className="stat-card">
-                            <h3>Avg Resolution Time</h3>
-                            <div className="value">
-                                {ticketData?.average_resolution_days ? `${ticketData.average_resolution_days} days` : '---'}
-                            </div>
-                        </div>
-
-                        <div className="stat-card">
-                            <h3>Pending Emails</h3>
-                            <div className="value">
-                                {emailsData?.summary?.pending || '---'}
-                            </div>
-                        </div>
-
-                        <div className="stat-card">
-                            <h3>High Priority</h3>
-                            <div className="value">
-                                {emailsData?.summary?.high_priority || '---'}
-                            </div>
-                        </div>
+                    <div className="tabs">
+                        <button 
+                            className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('analytics')}
+                        >
+                            📊 Analytics
+                        </button>
+                        <button 
+                            className={`tab ${activeTab === 'inbox' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('inbox')}
+                        >
+                            📧 Email Inbox
+                        </button>
                     </div>
 
-                    {!ptoData && !ticketData && !emailsData && (
-                        <div className="stat-card" style={{textAlign: 'center', padding: '40px'}}>
-                            <h3>No data available</h3>
-                            <p>Check browser console (F12) for errors</p>
+                    {activeTab === 'analytics' && (
+                        <>
+                            <div className="stats-grid">
+                                <div className="stat-card">
+                                    <h3>Total Employees</h3>
+                                    <div className="value">
+                                        {ptoData?.total_employees || '---'}
+                                    </div>
+                                </div>
+
+                                <div className="stat-card">
+                                    <h3>Average PTO Remaining</h3>
+                                    <div className="value">
+                                        {ptoData?.average_pto ? `${ptoData.average_pto} days` : '---'}
+                                    </div>
+                                </div>
+
+                                <div className="stat-card">
+                                    <h3>Total HR Tickets</h3>
+                                    <div className="value">
+                                        {ticketData?.total_tickets || '---'}
+                                    </div>
+                                </div>
+
+                                <div className="stat-card">
+                                    <h3>Avg Resolution Time</h3>
+                                    <div className="value">
+                                        {ticketData?.average_resolution_days ? `${ticketData.average_resolution_days} days` : '---'}
+                                    </div>
+                                </div>
+
+                                <div className="stat-card">
+                                    <h3>Pending Emails</h3>
+                                    <div className="value">
+                                        {emailsData?.summary?.pending || '---'}
+                                    </div>
+                                </div>
+
+                                <div className="stat-card">
+                                    <h3>High Priority</h3>
+                                    <div className="value">
+                                        {emailsData?.summary?.high_priority || '---'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {!ptoData && !ticketData && !emailsData && (
+                                <div className="stat-card" style={{textAlign: 'center', padding: '40px'}}>
+                                    <h3>No data available</h3>
+                                    <p>Check browser console (F12) for errors</p>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {activeTab === 'inbox' && (
+                        <div className="email-list">
+                            {emailsData?.emails && emailsData.emails.length > 0 ? (
+                                emailsData.emails.map((email, index) => (
+                                    <div 
+                                        key={index} 
+                                        className={`email-item ${email.Priority === 'High' ? 'high-priority' : ''}`}
+                                        onClick={() => setSelectedEmail(email)}
+                                    >
+                                        <div className="email-header">
+                                            <span className="email-from">{email['Employee Name']}</span>
+                                            <span className={`email-status ${email.Status.toLowerCase()}`}>
+                                                {email.Status}
+                                            </span>
+                                        </div>
+                                        <div className="email-subject">{email.Subject}</div>
+                                        <div className="email-preview">
+                                            {email.Category} • Priority: {email.Priority}
+                                            {email.days_until_due !== null && email.Status === 'Pending' && (
+                                                <span style={{marginLeft: '10px', color: email.days_until_due < 0 ? '#f44336' : '#666'}}>
+                                                    {email.days_until_due < 0 ? `Overdue by ${Math.abs(email.days_until_due)} days` : `Due in ${email.days_until_due} days`}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{padding: '40px', textAlign: 'center', color: '#666'}}>
+                                    <h3>No emails found</h3>
+                                    <p>Email inbox is empty or loading...</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
