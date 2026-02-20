@@ -547,6 +547,7 @@
                 setLoading(true);
 
                 try {
+                    console.log('Attempting HR login...');
                     const response = await fetch(`${API_URL}/api/hr/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -554,15 +555,20 @@
                         body: JSON.stringify({ username, password }),
                     });
 
+                    console.log('Login response status:', response.status);
                     const data = await response.json();
+                    console.log('Login response data:', data);
 
                     if (data.success) {
+                        console.log('✅ Login successful, loading data...');
                         setIsAuthenticated(true);
                         loadAllData();
                     } else {
+                        console.log('❌ Login failed:', data.error);
                         setError(data.error || 'Invalid credentials');
                     }
                 } catch (err) {
+                    console.error('Login error:', err);
                     setError('Failed to connect to server');
                 } finally {
                     setLoading(false);
@@ -571,15 +577,24 @@
 
             const loadAllData = async () => {
                 try {
+                    console.log('Loading HR data...');
                     const [ptoRes, ticketRes, emailsRes] = await Promise.all([
-                        fetch(`${API_URL}/api/hr/analytics/pto-usage`, { credentials: 'include' }),
-                        fetch(`${API_URL}/api/hr/analytics/tickets`, { credentials: 'include' }),
+                        fetch(`${API_URL}/api/hr/pto-overview`, { credentials: 'include' }),
+                        fetch(`${API_URL}/api/hr/ticket-analytics`, { credentials: 'include' }),
                         fetch(`${API_URL}/api/hr/emails`, { credentials: 'include' })
                     ]);
+
+                    console.log('PTO status:', ptoRes.status);
+                    console.log('Ticket status:', ticketRes.status);
+                    console.log('Email status:', emailsRes.status);
 
                     const ptoData = await ptoRes.json();
                     const ticketData = await ticketRes.json();
                     const emailsData = await emailsRes.json();
+
+                    console.log('PTO data:', ptoData);
+                    console.log('Ticket data:', ticketData);
+                    console.log('Email data:', emailsData);
 
                     if (ptoData.success) setPtoData(ptoData.data);
                     if (ticketData.success) setTicketData(ticketData.data);
@@ -609,19 +624,25 @@
             useEffect(() => {
                 const checkSession = async () => {
                     try {
+                        console.log('Checking for existing HR session...');
                         // Try to load PTO data - if it works, we're already authenticated
                         const response = await fetch(`${API_URL}/api/hr/pto-overview`, {
                             credentials: 'include'
                         });
                         
+                        console.log('Session check response status:', response.status);
+                        
                         if (response.ok) {
                             // Session exists, skip login
+                            console.log('✅ Valid session found, auto-authenticating');
                             setIsAuthenticated(true);
                             loadAllData();
+                        } else {
+                            console.log('No valid session, showing login screen');
                         }
                     } catch (err) {
                         // No valid session, show login screen
-                        console.log('No existing session, showing login');
+                        console.log('Session check error:', err);
                     }
                 };
                 
