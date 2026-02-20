@@ -605,6 +605,29 @@
                 }
             };
 
+            // Check for existing session on load
+            useEffect(() => {
+                const checkSession = async () => {
+                    try {
+                        // Try to load PTO data - if it works, we're already authenticated
+                        const response = await fetch(`${API_URL}/api/hr/pto-overview`, {
+                            credentials: 'include'
+                        });
+                        
+                        if (response.ok) {
+                            // Session exists, skip login
+                            setIsAuthenticated(true);
+                            loadAllData();
+                        }
+                    } catch (err) {
+                        // No valid session, show login screen
+                        console.log('No existing session, showing login');
+                    }
+                };
+                
+                checkSession();
+            }, []); // Run once on mount
+
             useEffect(() => {
                 if (isAuthenticated) {
                     loadEmails();
