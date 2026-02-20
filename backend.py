@@ -47,7 +47,12 @@ HEALTH_PLANS_CSV = os.environ.get('HEALTH_PLANS_CSV', 'health_plans.csv')
 print("Loading HR data...")
 employees_df = pd.read_csv(EMPLOYEES_CSV)
 hr_tickets_df = pd.read_csv(HR_TICKETS_CSV)
-hr_emails_df = pd.read_csv(HR_EMAILS_CSV, parse_dates=['Date Received', 'Response Due'])
+try:
+    hr_emails_df = pd.read_csv(HR_EMAILS_CSV, parse_dates=['Date Received', 'Response Due'])
+except:
+    # Fallback if file doesn't exist
+    print("⚠️  Warning: hr_emails.csv not found, using empty dataframe")
+    hr_emails_df = pd.DataFrame(columns=['Employee Name', 'Email', 'Subject', 'Category', 'Priority', 'Status', 'Date Received', 'Response Due', 'Message'])
 health_plans_df = pd.read_csv(HEALTH_PLANS_CSV)
 
 print(f"✓ Loaded {len(employees_df)} employees")
