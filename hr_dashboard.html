@@ -22,148 +22,150 @@
             color: #333;
         }
 
+        /* Login Screen */
         .login-screen {
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            padding: 20px;
         }
 
-        .login-box {
+        .login-container {
             background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            width: 400px;
+            padding: 50px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 450px;
         }
 
-        .login-box h1 {
+        .login-title {
             color: #632CA6;
+            font-size: 32px;
+            font-weight: 700;
             margin-bottom: 10px;
         }
 
-        .login-box p {
+        .subtitle {
             color: #666;
             margin-bottom: 30px;
+            font-size: 16px;
         }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-size: 14px;
+        .input-group {
+            margin-bottom: 20px;
         }
 
-        button {
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .input-group input {
             width: 100%;
-            padding: 12px;
-            background: #632CA6;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #632CA6;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 16px;
-            cursor: pointer;
             font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        button:hover {
-            background: #7d3bc5;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
         }
 
-        .error {
-            background: #fee;
-            color: #c33;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 15px;
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
             font-size: 14px;
         }
 
-        .dashboard {
-            padding: 20px;
+        /* Dashboard */
+        .dashboard-container {
+            padding: 30px;
             max-width: 1400px;
             margin: 0 auto;
         }
 
-        .header {
+        .dashboard-header {
             background: white;
-            padding: 20px;
+            padding: 25px 30px;
             border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .header h1 {
+        .dashboard-header h1 {
             color: #632CA6;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .stat-card h3 {
-            color: #666;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 10px;
-        }
-
-        .stat-card .value {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
-            color: #632CA6;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: white;
-            font-size: 18px;
         }
 
         .logout-btn {
-            width: auto;
-            padding: 10px 20px;
+            padding: 10px 24px;
             background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
         }
 
         .logout-btn:hover {
             background: #d32f2f;
         }
 
+        /* Tabs */
         .tabs {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
             background: white;
-            padding: 10px;
+            padding: 12px;
             border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .tab {
-            padding: 10px 20px;
+            flex: 1;
+            padding: 12px 20px;
             background: transparent;
             border: none;
-            cursor: pointer;
+            border-radius: 8px;
             font-weight: 600;
+            font-size: 15px;
             color: #666;
-            border-radius: 6px;
-            transition: all 0.2s;
+            cursor: pointer;
+            transition: all 0.3s;
         }
 
         .tab:hover {
@@ -171,21 +173,99 @@
         }
 
         .tab.active {
-            background: #632CA6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
 
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #632CA6;
+        }
+
+        /* Email Filters */
+        .email-filters {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* Email List */
         .email-list {
             background: white;
             border-radius: 12px;
             overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .email-item {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
+            padding: 24px;
+            border-bottom: 1px solid #f0f0f0;
             cursor: pointer;
             transition: background 0.2s;
+            position: relative;
+        }
+
+        .email-item:last-child {
+            border-bottom: none;
         }
 
         .email-item:hover {
@@ -196,44 +276,176 @@
             border-left: 4px solid #f44336;
         }
 
+        .email-item.medium-priority {
+            border-left: 4px solid #ff9800;
+        }
+
+        .email-item.low-priority {
+            border-left: 4px solid #4caf50;
+        }
+
         .email-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .email-from {
             font-weight: 600;
+            font-size: 16px;
             color: #333;
         }
 
-        .email-status {
+        .email-badges {
+            display: flex;
+            gap: 8px;
+        }
+
+        .badge {
             padding: 4px 12px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: 600;
         }
 
-        .email-status.pending {
+        .badge.pending {
             background: #fff3e0;
             color: #f57c00;
         }
 
-        .email-status.resolved {
+        .badge.resolved {
             background: #e8f5e9;
             color: #2e7d32;
         }
 
-        .email-subject {
-            font-size: 16px;
-            color: #333;
-            margin-bottom: 4px;
+        .badge.high {
+            background: #ffebee;
+            color: #c62828;
         }
 
-        .email-preview {
+        .email-subject {
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .email-meta {
+            font-size: 13px;
             color: #666;
-            font-size: 14px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .email-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .overdue {
+            color: #f44336;
+            font-weight: 600;
+        }
+
+        /* Email Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 25px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            color: #632CA6;
+            font-size: 24px;
+        }
+
+        .close-btn {
+            background: #f5f5f5;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .close-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .email-detail-row {
+            margin-bottom: 20px;
+        }
+
+        .email-detail-row label {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .email-detail-row .value {
+            color: #333;
+            font-size: 15px;
+        }
+
+        .email-body {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-data h3 {
+            margin-bottom: 10px;
+            color: #666;
         }
     </style>
 </head>
@@ -257,6 +469,10 @@
             const [ticketData, setTicketData] = useState(null);
             const [emailsData, setEmailsData] = useState(null);
             const [selectedEmail, setSelectedEmail] = useState(null);
+            
+            // Filter states
+            const [statusFilter, setStatusFilter] = useState('all');
+            const [categoryFilter, setCategoryFilter] = useState('all');
 
             // Check localStorage for existing auth
             useEffect(() => {
@@ -273,24 +489,19 @@
                 setError('');
                 setLoading(true);
 
-                console.log('Attempting login...');
-
-                // Simple client-side auth for now
+                // Client-side auth
                 if (username === 'hr' && password === 'datadog2026') {
-                    console.log('✅ Credentials correct');
                     localStorage.setItem('hr_auth', 'true');
                     setIsAuthenticated(true);
                     loadAllData();
                 } else {
-                    console.log('❌ Invalid credentials');
-                    setError('Invalid credentials');
+                    setError('Invalid credentials. Try: hr / datadog2026');
                 }
 
                 setLoading(false);
             };
 
             const loadAllData = async () => {
-                console.log('Loading all data...');
                 setLoading(true);
 
                 try {
@@ -298,11 +509,9 @@
                     const ptoRes = await fetch(`${API_URL}/api/hr/pto-overview`, {
                         credentials: 'include'
                     });
-                    console.log('PTO status:', ptoRes.status);
                     
                     if (ptoRes.ok) {
                         const ptoJson = await ptoRes.json();
-                        console.log('PTO data:', ptoJson);
                         if (ptoJson.success) {
                             setPtoData(ptoJson.data);
                         }
@@ -312,11 +521,9 @@
                     const ticketRes = await fetch(`${API_URL}/api/hr/ticket-analytics`, {
                         credentials: 'include'
                     });
-                    console.log('Ticket status:', ticketRes.status);
                     
                     if (ticketRes.ok) {
                         const ticketJson = await ticketRes.json();
-                        console.log('Ticket data:', ticketJson);
                         if (ticketJson.success) {
                             setTicketData(ticketJson.data);
                         }
@@ -326,20 +533,16 @@
                     const emailRes = await fetch(`${API_URL}/api/hr/emails`, {
                         credentials: 'include'
                     });
-                    console.log('Email status:', emailRes.status);
                     
                     if (emailRes.ok) {
                         const emailJson = await emailRes.json();
-                        console.log('Email data:', emailJson);
                         if (emailJson.success) {
                             setEmailsData(emailJson);
                         }
                     }
-
-                    console.log('✅ Data loaded successfully');
                 } catch (err) {
                     console.error('Failed to load data:', err);
-                    setError('Failed to load dashboard data. Check console for details.');
+                    setError('Failed to load dashboard data');
                 } finally {
                     setLoading(false);
                 }
@@ -353,32 +556,48 @@
                 setEmailsData(null);
             };
 
+            const getFilteredEmails = () => {
+                if (!emailsData?.emails) return [];
+                
+                return emailsData.emails.filter(email => {
+                    if (statusFilter !== 'all' && email.Status !== statusFilter) return false;
+                    if (categoryFilter !== 'all' && email.Category !== categoryFilter) return false;
+                    return true;
+                });
+            };
+
             // Login screen
             if (!isAuthenticated) {
                 return (
                     <div className="login-screen">
-                        <div className="login-box">
-                            <h1>HR Dashboard</h1>
-                            <p>Secure Login Required</p>
+                        <div className="login-container">
+                            <h1 className="login-title">HR Dashboard</h1>
+                            <p className="subtitle">Secure Login Required</p>
                             
-                            {error && <div className="error">{error}</div>}
+                            {error && <div className="error-message">{error}</div>}
                             
                             <form onSubmit={handleLogin}>
-                                <input
-                                    type="text"
-                                    placeholder="Username"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    required
-                                />
-                                <input
-                                    type="password"
-                                    placeholder="Password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                                <button type="submit" disabled={loading}>
+                                <div className="input-group">
+                                    <label>Username</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter username"
+                                        value={username}
+                                        onChange={(e) => setUsername(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Password</label>
+                                    <input
+                                        type="password"
+                                        placeholder="Enter password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <button type="submit" className="btn-primary" disabled={loading}>
                                     {loading ? 'Logging in...' : 'Login'}
                                 </button>
                             </form>
@@ -387,130 +606,204 @@
                 );
             }
 
-            // Loading state
-            if (loading && !ptoData && !ticketData) {
-                return (
-                    <div className="loading">
-                        <h2>Loading Dashboard Data...</h2>
-                        <p>Please wait...</p>
-                    </div>
-                );
-            }
-
             // Dashboard screen
             return (
-                <div className="dashboard">
-                    <div className="header">
-                        <h1>📊 HR Dashboard</h1>
+                <div className="dashboard-container">
+                    <div className="dashboard-header">
+                        <h1>📊 HR Analytics Dashboard</h1>
                         <button className="logout-btn" onClick={handleLogout}>
                             Logout
                         </button>
                     </div>
-
-                    {error && <div className="error">{error}</div>}
 
                     <div className="tabs">
                         <button 
                             className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
                             onClick={() => setActiveTab('analytics')}
                         >
-                            📊 Analytics
+                            📊 Analytics Overview
                         </button>
                         <button 
                             className={`tab ${activeTab === 'inbox' ? 'active' : ''}`}
                             onClick={() => setActiveTab('inbox')}
                         >
-                            📧 Email Inbox
+                            📧 Email Inbox ({emailsData?.summary?.pending || 0})
                         </button>
                     </div>
 
                     {activeTab === 'analytics' && (
-                        <>
-                            <div className="stats-grid">
-                                <div className="stat-card">
-                                    <h3>Total Employees</h3>
-                                    <div className="value">
-                                        {ptoData?.total_employees || '---'}
-                                    </div>
-                                </div>
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <h3>Total Employees</h3>
+                                <div className="value">{ptoData?.total_employees || '---'}</div>
+                            </div>
 
-                                <div className="stat-card">
-                                    <h3>Average PTO Remaining</h3>
-                                    <div className="value">
-                                        {ptoData?.average_pto ? `${ptoData.average_pto} days` : '---'}
-                                    </div>
-                                </div>
-
-                                <div className="stat-card">
-                                    <h3>Total HR Tickets</h3>
-                                    <div className="value">
-                                        {ticketData?.total_tickets || '---'}
-                                    </div>
-                                </div>
-
-                                <div className="stat-card">
-                                    <h3>Avg Resolution Time</h3>
-                                    <div className="value">
-                                        {ticketData?.average_resolution_days ? `${ticketData.average_resolution_days} days` : '---'}
-                                    </div>
-                                </div>
-
-                                <div className="stat-card">
-                                    <h3>Pending Emails</h3>
-                                    <div className="value">
-                                        {emailsData?.summary?.pending || '---'}
-                                    </div>
-                                </div>
-
-                                <div className="stat-card">
-                                    <h3>High Priority</h3>
-                                    <div className="value">
-                                        {emailsData?.summary?.high_priority || '---'}
-                                    </div>
+                            <div className="stat-card">
+                                <h3>Avg PTO Remaining</h3>
+                                <div className="value">
+                                    {ptoData?.average_pto ? `${ptoData.average_pto} days` : '---'}
                                 </div>
                             </div>
 
-                            {!ptoData && !ticketData && !emailsData && (
-                                <div className="stat-card" style={{textAlign: 'center', padding: '40px'}}>
-                                    <h3>No data available</h3>
-                                    <p>Check browser console (F12) for errors</p>
+                            <div className="stat-card">
+                                <h3>Total HR Tickets</h3>
+                                <div className="value">{ticketData?.total_tickets || '---'}</div>
+                            </div>
+
+                            <div className="stat-card">
+                                <h3>Avg Resolution</h3>
+                                <div className="value">
+                                    {ticketData?.average_resolution_days ? `${ticketData.average_resolution_days} days` : '---'}
                                 </div>
-                            )}
-                        </>
+                            </div>
+
+                            <div className="stat-card">
+                                <h3>Pending Emails</h3>
+                                <div className="value">{emailsData?.summary?.pending || '---'}</div>
+                            </div>
+
+                            <div className="stat-card">
+                                <h3>High Priority</h3>
+                                <div className="value">{emailsData?.summary?.high_priority || '---'}</div>
+                            </div>
+                        </div>
                     )}
 
                     {activeTab === 'inbox' && (
-                        <div className="email-list">
-                            {emailsData?.emails && emailsData.emails.length > 0 ? (
-                                emailsData.emails.map((email, index) => (
-                                    <div 
-                                        key={index} 
-                                        className={`email-item ${email.Priority === 'High' ? 'high-priority' : ''}`}
-                                        onClick={() => setSelectedEmail(email)}
+                        <>
+                            <div className="email-filters">
+                                <div className="filter-group">
+                                    <label>Filter by Status</label>
+                                    <select 
+                                        value={statusFilter} 
+                                        onChange={(e) => setStatusFilter(e.target.value)}
                                     >
-                                        <div className="email-header">
-                                            <span className="email-from">{email['Employee Name']}</span>
-                                            <span className={`email-status ${email.Status.toLowerCase()}`}>
-                                                {email.Status}
+                                        <option value="all">All Status</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Resolved">Resolved</option>
+                                    </select>
+                                </div>
+
+                                <div className="filter-group">
+                                    <label>Filter by Category</label>
+                                    <select 
+                                        value={categoryFilter} 
+                                        onChange={(e) => setCategoryFilter(e.target.value)}
+                                    >
+                                        <option value="all">All Categories</option>
+                                        <option value="Benefits">Benefits</option>
+                                        <option value="Leave">Leave</option>
+                                        <option value="Payroll">Payroll</option>
+                                        <option value="Compliance">Compliance</option>
+                                        <option value="General">General</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="email-list">
+                                {getFilteredEmails().length > 0 ? (
+                                    getFilteredEmails().map((email, index) => (
+                                        <div 
+                                            key={index} 
+                                            className={`email-item ${email.Priority.toLowerCase()}-priority`}
+                                            onClick={() => setSelectedEmail(email)}
+                                        >
+                                            <div className="email-header">
+                                                <span className="email-from">{email['Employee Name']}</span>
+                                                <div className="email-badges">
+                                                    <span className={`badge ${email.Status.toLowerCase()}`}>
+                                                        {email.Status}
+                                                    </span>
+                                                    <span className={`badge ${email.Priority.toLowerCase()}`}>
+                                                        {email.Priority}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="email-subject">{email.Subject}</div>
+                                            <div className="email-meta">
+                                                <span>📁 {email.Category}</span>
+                                                <span>📅 {new Date(email['Date Received']).toLocaleDateString()}</span>
+                                                {email.days_until_due !== null && email.Status === 'Pending' && (
+                                                    <span className={email.days_until_due < 0 ? 'overdue' : ''}>
+                                                        {email.days_until_due < 0 
+                                                            ? `⚠️ Overdue by ${Math.abs(email.days_until_due)} days` 
+                                                            : `⏰ Due in ${email.days_until_due} days`}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="no-data">
+                                        <h3>No emails found</h3>
+                                        <p>Try adjusting your filters</p>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Email Detail Modal */}
+                    {selectedEmail && (
+                        <div className="modal-overlay" onClick={() => setSelectedEmail(null)}>
+                            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h2>Email Details</h2>
+                                    <button className="close-btn" onClick={() => setSelectedEmail(null)}>
+                                        ×
+                                    </button>
+                                </div>
+                                <div className="modal-body">
+                                    <div className="email-detail-row">
+                                        <label>From</label>
+                                        <div className="value">{selectedEmail['Employee Name']}</div>
+                                    </div>
+                                    <div className="email-detail-row">
+                                        <label>Subject</label>
+                                        <div className="value">{selectedEmail.Subject}</div>
+                                    </div>
+                                    <div className="email-detail-row">
+                                        <label>Category</label>
+                                        <div className="value">{selectedEmail.Category}</div>
+                                    </div>
+                                    <div className="email-detail-row">
+                                        <label>Priority</label>
+                                        <div className="value">
+                                            <span className={`badge ${selectedEmail.Priority.toLowerCase()}`}>
+                                                {selectedEmail.Priority}
                                             </span>
                                         </div>
-                                        <div className="email-subject">{email.Subject}</div>
-                                        <div className="email-preview">
-                                            {email.Category} • Priority: {email.Priority}
-                                            {email.days_until_due !== null && email.Status === 'Pending' && (
-                                                <span style={{marginLeft: '10px', color: email.days_until_due < 0 ? '#f44336' : '#666'}}>
-                                                    {email.days_until_due < 0 ? `Overdue by ${Math.abs(email.days_until_due)} days` : `Due in ${email.days_until_due} days`}
-                                                </span>
-                                            )}
+                                    </div>
+                                    <div className="email-detail-row">
+                                        <label>Status</label>
+                                        <div className="value">
+                                            <span className={`badge ${selectedEmail.Status.toLowerCase()}`}>
+                                                {selectedEmail.Status}
+                                            </span>
                                         </div>
                                     </div>
-                                ))
-                            ) : (
-                                <div style={{padding: '40px', textAlign: 'center', color: '#666'}}>
-                                    <h3>No emails found</h3>
-                                    <p>Email inbox is empty or loading...</p>
+                                    <div className="email-detail-row">
+                                        <label>Received</label>
+                                        <div className="value">
+                                            {new Date(selectedEmail['Date Received']).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    {selectedEmail['Response Due'] && (
+                                        <div className="email-detail-row">
+                                            <label>Response Due</label>
+                                            <div className="value">
+                                                {new Date(selectedEmail['Response Due']).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="email-detail-row">
+                                        <label>Message</label>
+                                        <div className="email-body">
+                                            {selectedEmail.Message || 'No message content available'}
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     )}
                 </div>
