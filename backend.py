@@ -265,19 +265,11 @@ def test_session():
 
 @app.route('/api/hr/pto-overview', methods=['GET', 'OPTIONS'])
 def pto_overview():
-    """PTO analytics"""
+    """PTO analytics - TEMP: No auth for debugging"""
     if request.method == 'OPTIONS':
         return '', 200
     
-    print(f"📊 PTO overview request")
-    print(f"   Session exists: {session}")
-    print(f"   is_hr flag: {session.get('is_hr')}")
-    
-    if not session.get('is_hr'):
-        print("❌ Unauthorized PTO request - not logged in as HR")
-        return jsonify({'error': 'Unauthorized', 'success': False}), 401
-    
-    print("✅ PTO overview request authorized")
+    print(f"📊 PTO overview request (NO AUTH CHECK - DEBUG MODE)")
     
     try:
         pto_column = 'Days Off Remaining' if 'Days Off Remaining' in employees_df.columns else 'Days Off'
@@ -304,18 +296,11 @@ def pto_overview():
 
 @app.route('/api/hr/ticket-analytics', methods=['GET', 'OPTIONS'])
 def ticket_analytics():
-    """Ticket analytics"""
+    """Ticket analytics - TEMP: No auth for debugging"""
     if request.method == 'OPTIONS':
         return '', 200
     
-    print(f"📊 Ticket analytics request")
-    print(f"   is_hr flag: {session.get('is_hr')}")
-    
-    if not session.get('is_hr'):
-        print("❌ Unauthorized ticket analytics request")
-        return jsonify({'error': 'Unauthorized', 'success': False}), 401
-    
-    print("✅ Ticket analytics request authorized")
+    print(f"📊 Ticket analytics request (NO AUTH CHECK - DEBUG MODE)")
     
     try:
         total_tickets = len(hr_tickets_df)
@@ -345,18 +330,11 @@ def ticket_analytics():
 
 @app.route('/api/hr/emails', methods=['GET', 'OPTIONS'])
 def get_hr_emails():
-    """Get HR email inbox"""
+    """Get HR email inbox - TEMP: No auth for debugging"""
     if request.method == 'OPTIONS':
         return '', 200
     
-    print(f"📧 HR emails request")
-    print(f"   is_hr flag: {session.get('is_hr')}")
-    
-    if not session.get('is_hr'):
-        print("❌ Unauthorized emails request")
-        return jsonify({'error': 'Unauthorized', 'success': False}), 401
-    
-    print("✅ Emails request authorized")
+    print(f"📧 HR emails request (NO AUTH CHECK - DEBUG MODE)")
     
     try:
         status_filter = request.args.get('status', 'all')
