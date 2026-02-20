@@ -3,11 +3,11 @@ Backend.py - OpenAI Agents SDK Version with Flask
 ===================================================
 
 Uses:
-- Flask with proper session management
+- Flask (regular, not Quart) to avoid version compatibility bugs
 - openai-agents package
 - asyncio.run() to call async agent methods
 
-ACTUALLY WORKS - Including HR Dashboard!
+ACTUALLY WORKS!
 """
 
 from flask import Flask, request, jsonify, send_file, session
@@ -26,8 +26,15 @@ from w2_generator import W2Generator
 # ================================================================
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production-12345')
-CORS(app, supports_credentials=True)
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+
+# Configure CORS with explicit credential support
+CORS(app, 
+     resources={r"/api/*": {"origins": "*"}},
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "OPTIONS"]
+)
 
 # ================================================================
 # LOAD DATA
@@ -62,18 +69,6 @@ hr_agent_system = HRAgentSystem(
 print("✅ HR Agent System ready")
 
 # Initialize W-2 generator
-try:
-    w2_output_dir = '/tmp/tax_documents' if os.path.exists('/tmp') else os.path.expanduser('~/Desktop/tax_documents')
-    w2_gen = W2Generator(output_dir=w2_output_dir)
-    print(f"✓ W-2 Generator initialized (output: {w2_output_dir})")
-except Exception as e:
-    print(f"✗ Error initializing W-2 Generator: {e}")
-    w2_gen = None
-
-
-# ================================================================
-# API ENDPOINTS
-# ================================================================
 
 @app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health_check():
@@ -224,13 +219,13 @@ def hr_login():
     # Simple auth
     if username == 'hr' and password == 'datadog2026':
         session['is_hr'] = True
-        print(f"✅ HR login successful")
+        session.permanent = True
+        print(f"✅ HR login successful - session set")
         return jsonify({
             'success': True,
             'message': 'Login successful'
         })
     
-    print(f"❌ HR login failed for username: {username}")
     return jsonify({
         'success': False,
         'error': 'Invalid credentials'
@@ -241,10 +236,10 @@ def hr_login():
 def pto_overview():
     """PTO analytics"""
     if not session.get('is_hr'):
-        print("❌ Unauthorized PTO request - not logged in as HR")
+        print("❌ Unauthorized PTO request - not logged in")
         return jsonify({'error': 'Unauthorized'}), 401
     
-    print("✅ PTO overview request authorized")
+    print("✅ PTO overview authorized")
     
     pto_column = 'Days Off Remaining' if 'Days Off Remaining' in employees_df.columns else 'Days Off'
     avg_pto = employees_df[pto_column].mean()
@@ -272,7 +267,7 @@ def ticket_analytics():
         print("❌ Unauthorized ticket analytics request")
         return jsonify({'error': 'Unauthorized'}), 401
     
-    print("✅ Ticket analytics request authorized")
+    print("✅ Ticket analytics authorized")
     
     total_tickets = len(hr_tickets_df)
     avg_resolution = hr_tickets_df['Resolution Days'].mean()
