@@ -560,7 +560,23 @@
                     console.log('Login response data:', data);
 
                     if (data.success) {
-                        console.log('✅ Login successful, loading data...');
+                        console.log('✅ Login successful, testing session...');
+                        
+                        // Test if session actually works
+                        const testRes = await fetch(`${API_URL}/api/hr/test-session`, {
+                            credentials: 'include'
+                        });
+                        const testData = await testRes.json();
+                        console.log('Session test result:', testData);
+                        
+                        if (!testData.has_session) {
+                            console.error('❌ WARNING: Session not persisting!');
+                            setError('Session error - please contact support');
+                            setLoading(false);
+                            return;
+                        }
+                        
+                        console.log('✅ Session confirmed, loading data...');
                         setIsAuthenticated(true);
                         loadAllData();
                     } else {
