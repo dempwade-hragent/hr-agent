@@ -1274,29 +1274,18 @@
                                         </>
                                     ) : (
                                         <>
-                                            <div className="input-group">
-                                                <label>HR Username</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="hr"
-                                                    value={hrUsername}
-                                                    onChange={(e) => setHrUsername(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="input-group">
-                                                <label>Password</label>
-                                                <input
-                                                    type="password"
-                                                    placeholder="••••••••"
-                                                    value={hrPassword}
-                                                    onChange={(e) => setHrPassword(e.target.value)}
-                                                />
-                                            </div>
-                                            <button className="btn btn-primary" onClick={handleHRLogin}>
-                                                Login to Dashboard
+                                            <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.9)', marginBottom: '20px', fontSize: '0.9rem'}}>
+                                                Access the HR Analytics Dashboard
+                                            </p>
+                                            <button 
+                                                className="btn btn-primary" 
+                                                onClick={() => window.location.href = 'hr_dashboard.html'}
+                                                style={{marginBottom: '1rem'}}
+                                            >
+                                                Go to HR Dashboard
                                             </button>
-                                            <p style={{textAlign: 'center', marginTop: '1rem', fontSize: '0.75rem', opacity: 0.5}}>
-                                                Demo: hr / datadog2026
+                                            <p style={{textAlign: 'center', fontSize: '0.75rem', opacity: 0.5}}>
+                                                Login required: hr / datadog2026
                                             </p>
                                         </>
                                     )}
