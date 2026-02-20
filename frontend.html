@@ -1251,21 +1251,21 @@
                                     {userType === 'employee' ? (
                                         <>
                                             <div className="input-group">
-                                                <label>Employee ID</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="EMP001"
-                                                    value={employeeId}
-                                                    onChange={(e) => setEmployeeId(e.target.value)}
-                                                />
-                                            </div>
-                                            <div className="input-group">
-                                                <label>Or First Name</label>
+                                                <label>Employee Name</label>
                                                 <input
                                                     type="text"
                                                     placeholder="John"
                                                     value={firstName}
                                                     onChange={(e) => setFirstName(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="input-group">
+                                                <label>Password</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="EMP001"
+                                                    value={employeeId}
+                                                    onChange={(e) => setEmployeeId(e.target.value)}
                                                 />
                                             </div>
                                             <button className="btn btn-primary" onClick={handleLogin}>
