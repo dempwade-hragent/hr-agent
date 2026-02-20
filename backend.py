@@ -99,17 +99,21 @@ def ask_question():
         data = request.get_json()
         question = data.get('question', '').strip()
         employee_id = str(data.get('employee_id', ''))
+        first_name = str(data.get('first_name', ''))
         
-        if not question or not employee_id:
+        # Use whichever was provided - employee_id or first_name
+        identifier = employee_id if employee_id else first_name
+        
+        if not question or not identifier:
             return jsonify({
                 'success': False,
-                'error': 'Missing question or employee_id'
+                'error': 'Missing question or employee identifier'
             }), 400
         
-        print(f"📥 Question from employee {employee_id}: {question}")
+        print(f"📥 Question from employee {identifier}: {question}")
         
         # Call async method using asyncio.run()
-        result = asyncio.run(hr_agent_system.chat(employee_id, question))
+        result = asyncio.run(hr_agent_system.chat(identifier, question))
         
         print(f"✅ Response: {result['response'][:100]}...")
         
@@ -120,13 +124,13 @@ def ask_question():
                 try:
                     # Find employee in DataFrame
                     employee_row = None
-                    if employee_id.startswith('EID'):
-                        match = employees_df[employees_df['Employee ID'].astype(str).str.strip() == employee_id]
+                    if identifier.startswith('EID'):
+                        match = employees_df[employees_df['Employee ID'].astype(str).str.strip() == identifier]
                         if not match.empty:
                             employee_row = match.iloc[0]
                     else:
                         # Try by first name
-                        match = employees_df[employees_df['First Name'].astype(str).str.strip().str.lower() == employee_id.lower()]
+                        match = employees_df[employees_df['First Name'].astype(str).str.strip().str.lower() == identifier.lower()]
                         if not match.empty:
                             employee_row = match.iloc[0]
                     
@@ -134,7 +138,7 @@ def ask_question():
                         employee_data = employee_row.to_dict()
                         pdf_path = w2_gen.generate_w2(employee_data)
                         result['w2_path'] = pdf_path
-                        result['w2_download_url'] = f'/api/download-w2/{employee_id}'
+                        result['w2_download_url'] = f'/api/download-w2/{identifier}'
                 except Exception as e:
                     print(f"W-2 generation error: {e}")
                     result['w2_error'] = str(e)
