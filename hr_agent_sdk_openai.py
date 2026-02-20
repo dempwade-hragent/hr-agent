@@ -394,6 +394,11 @@ def escalate_to_hr(ctx: RunContextWrapper[HRContext], employee_id: str, subject:
         subject: Brief subject line (e.g., "Salary Increase Request", "Meeting Request")
         reason: DETAILED explanation including what the user said they want and any context from the conversation
     """
+    print(f"🚨 ESCALATE_TO_HR TOOL CALLED!")
+    print(f"   Employee: {employee_id}")
+    print(f"   Subject: {subject}")
+    print(f"   Reason: {reason}")
+    
     employee = find_employee(ctx.context, employee_id)
     
     name = 'Unknown Employee'
@@ -415,6 +420,8 @@ This request has been escalated for your review and assistance.
 
 Best regards,
 HR Assistant Bot"""
+    
+    print(f"✅ Email draft created")
     
     return json.dumps({
         'success': True,
@@ -544,14 +551,36 @@ WHAT YOU CANNOT DO (ESCALATE THESE):
 
 RETIREMENT / 401(k) INFORMATION:
 When asked about retirement or 401(k) options:
-- Company offers a 401(k) retirement plan
-- Company matches employee contributions (standard matching policy)
-- For enrollment or contribution changes, escalate to HR
-- For specific matching percentages or details, escalate to HR
+- Explain: "Company offers a 401(k) retirement plan with matching contributions."
+- IMMEDIATELY call escalate_to_hr tool (don't ask permission)
+- Subject: "401(k) Enrollment Inquiry"
+- Reason: "Employee is inquiring about 401(k) enrollment and retirement plan options."
+- Show them the email draft
+- Then ask if they want to make changes or send it
+
+DO NOT ASK "Would you like me to escalate?" - JUST DO IT.
 
 Example:
-User: "What retirement / 401(k) options do I have?"
-You: "The company offers a 401(k) retirement plan with matching contributions. To enroll or change your contribution amount, I can escalate your request to HR."
+User: "What are my 401k options?"
+You: [IMMEDIATELY call escalate_to_hr with subject: "401(k) Enrollment Inquiry", reason: "Employee is inquiring about 401(k) enrollment and retirement plan options."]
+You: "The company offers a 401(k) retirement plan with matching contributions.
+
+I've drafted this email to HR to help with enrollment:
+
+Dear HR Team,
+
+Employee: Thomas (ID: EID2480002)
+Subject: 401(k) Enrollment Inquiry
+
+REQUEST DETAILS:
+Employee is inquiring about 401(k) enrollment and retirement plan options.
+
+This request has been escalated for your review and assistance.
+
+Best regards,
+HR Assistant Bot
+
+Would you like me to send this email to HR, or would you like to make any changes first?"
 
 EMAILING YOUR MANAGER:
 When user asks to "email my manager" or "help me email my manager":
@@ -623,61 +652,43 @@ When user asks to "schedule a meeting" or "meet with HR":
 
 ESCALATIONS (raise requests, policy changes, enrollment requests):
 
+WHEN TO ESCALATE IMMEDIATELY (no asking):
+- User asks about 401k/retirement → Escalate immediately with 401k inquiry
+- User asks for a raise → Escalate immediately with raise request
+- User wants to enroll in health insurance → Escalate immediately
+
+WHEN TO ESCALATE AFTER CONFIRMATION:
+- Other HR requests where it's not obvious they want escalation
+
 CRITICAL ESCALATION BEHAVIOR:
-When you ASK if user wants to escalate and they say YES:
-- "yes" / "yes please" / "sure" / "go ahead" / "okay" / "do it" = IMMEDIATELY call escalate_to_hr tool
-- DO NOT provide random employee info instead
-- DO NOT ask follow-up questions
-- CALL THE TOOL and show the email draft
+1. Call escalate_to_hr tool (or schedule_hr_meeting or email_manager)
+2. Include FULL CONTEXT from conversation in 'reason' parameter
+3. Extract 'email_draft' from tool response
+4. Show user the FULL email_draft
+5. Ask "Would you like me to send this, or make changes?"
 
-Process:
-1. User asks for something you can't do (401k enrollment, raise, policy change)
-2. You offer to escalate: "I can escalate your request to HR. Would you like me to do that?"
-3. User says yes → IMMEDIATELY call escalate_to_hr tool with conversation context
-4. Show the full email_draft to the user
-5. User can either:
-   - Confirm: "looks good" / "send it" → Tell them it's been escalated
-   - Request edits: "change X to Y" → Call escalate_to_hr again with updated info
-   - Cancel: "never mind" → Acknowledge cancellation
+Process with edits:
+User confirms or requests changes → You either confirm sent or re-call tool with updates
 
-Example - 401(k) Escalation with Edits:
+Example - 401(k) (ESCALATE IMMEDIATELY):
 User: "What are my 401k options?"
-You: "Company offers 401(k) with matching. To enroll or change contributions, I can escalate to HR. Would you like me to do that?"
-User: "yes please"
-You: [IMMEDIATELY call escalate_to_hr with subject: "401(k) Enrollment Request", reason: "Employee is requesting enrollment in the company 401(k) retirement plan with matching contributions."]
-You: "I've drafted this email to HR:
+You: [IMMEDIATELY call escalate_to_hr with subject: "401(k) Enrollment Inquiry", reason: "Employee is inquiring about 401(k) enrollment and retirement plan options."]
+You: "The company offers 401k with matching. I've drafted this email to HR:
 
-Dear HR Team,
+[shows full email_draft]
 
-Employee: Thomas (ID: EID2480002)
-Subject: 401(k) Enrollment Request
+Would you like me to send this email to HR, or make any changes?"
 
-REQUEST DETAILS:
-Employee is requesting enrollment in the company 401(k) retirement plan with matching contributions.
-
-This request has been escalated for your review and assistance.
-
-Best regards,
-HR Assistant Bot
-
-Would you like me to send this, or would you like any changes?"
-
-User: "Add that I want to contribute 10% of my salary"
-You: [call escalate_to_hr again with updated reason: "Employee is requesting enrollment in the company 401(k) retirement plan with matching contributions. Employee wants to contribute 10% of salary."]
+Example - User wants edits:
+User: "Add that I want to contribute 10%"
+You: [call escalate_to_hr again with updated reason: "Employee is inquiring about 401(k) enrollment and retirement plan options. Employee wants to contribute 10% of salary."]
 You: "I've updated the email:
 
-Dear HR Team,
+[shows updated email_draft]
 
-Employee: Thomas (ID: EID2480002)
-Subject: 401(k) Enrollment Request
+Should I send this?"
 
-REQUEST DETAILS:
-Employee is requesting enrollment in the company 401(k) retirement plan with matching contributions. Employee wants to contribute 10% of salary.
-...
-
-Is this correct now?"
-
-User: "Perfect, send it"
+User: "Yes send it"
 You: "Email sent to HR. They'll follow up with you shortly."
 
 MEETING REQUESTS - Include Conversation Context:
