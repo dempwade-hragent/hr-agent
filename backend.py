@@ -245,6 +245,24 @@ def hr_login():
         }), 500
 
 
+@app.route('/api/hr/test-session', methods=['GET', 'OPTIONS'])
+def test_session():
+    """Test if session is working"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    print(f"🧪 Session test")
+    print(f"   Session data: {dict(session)}")
+    print(f"   is_hr: {session.get('is_hr')}")
+    
+    return jsonify({
+        'success': True,
+        'has_session': 'is_hr' in session,
+        'is_hr': session.get('is_hr', False),
+        'session_data': dict(session)
+    })
+
+
 @app.route('/api/hr/pto-overview', methods=['GET', 'OPTIONS'])
 def pto_overview():
     """PTO analytics"""
