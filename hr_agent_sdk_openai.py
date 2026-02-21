@@ -1,11 +1,11 @@
 """
 HR Agent - WORKING VERSION WITH SIMPLE INSTRUCTIONS
 ===================================================
-Using original working imports, just simpler instructions
+Using correct imports for openai-agents package
 """
 
 from openai import OpenAI
-from openai.agents import Agent, function_tool, RunContextWrapper
+from agents import Agent, function_tool, RunContextWrapper
 import pandas as pd
 import json
 from typing import Optional
