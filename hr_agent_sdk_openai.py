@@ -1,7 +1,7 @@
 """
 HR Agent - STANDARD OPENAI FUNCTION CALLING
 ==========================================
-No SDK nonsense - just standard OpenAI API that actually works
+No SDK - just standard OpenAI API 
 """
 
 from openai import OpenAI
