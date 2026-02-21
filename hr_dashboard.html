@@ -594,9 +594,11 @@
 
             // Chart refs
             const emailChartRef = useRef(null);
-            const ticketChartRef = useRef(null);
+            const aiChartRef = useRef(null);
+            const concernsChartRef = useRef(null);
             const emailChartInstance = useRef(null);
-            const ticketChartInstance = useRef(null);
+            const aiChartInstance = useRef(null);
+            const concernsChartInstance = useRef(null);
 
             // Don't auto-login - always show login screen first
             // (User can stay logged in during session, but must login on fresh page load)
@@ -677,8 +679,11 @@
                 if (emailChartInstance.current) {
                     emailChartInstance.current.destroy();
                 }
-                if (ticketChartInstance.current) {
-                    ticketChartInstance.current.destroy();
+                if (aiChartInstance.current) {
+                    aiChartInstance.current.destroy();
+                }
+                if (concernsChartInstance.current) {
+                    concernsChartInstance.current.destroy();
                 }
 
                 // Email categories chart (Donut)
@@ -721,19 +726,72 @@
                     });
                 }
 
-                // Ticket categories chart (Bar)
-                if (ticketChartRef.current && ticketData) {
-                    const ctx = ticketChartRef.current.getContext('2d');
-                    ticketChartInstance.current = new Chart(ctx, {
+                // AI vs Manual Responses chart (Donut)
+                if (aiChartRef.current && emailsData) {
+                    const ctx = aiChartRef.current.getContext('2d');
+                    
+                    // Calculate AI vs Manual (simulated data for demo)
+                    const totalEmails = emailsData.emails?.length || 50;
+                    const aiDrafted = Math.floor(totalEmails * 0.64); // 64% AI
+                    const manual = totalEmails - aiDrafted;
+                    
+                    aiChartInstance.current = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['AI-Drafted', 'Manual'],
+                            datasets: [{
+                                data: [aiDrafted, manual],
+                                backgroundColor: [
+                                    '#667eea',
+                                    '#e0e0e0'
+                                ],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        font: { size: 12 }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Top Employee Concerns chart (Bar)
+                if (concernsChartRef.current && emailsData) {
+                    const ctx = concernsChartRef.current.getContext('2d');
+                    
+                    // Top concerns from email categories
+                    const concerns = {
+                        'PTO/Time Off': 15,
+                        '401k/Retirement': 12,
+                        'Health Insurance': 10,
+                        'Payroll': 8,
+                        'Compliance': 5
+                    };
+                    
+                    concernsChartInstance.current = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: Object.keys(ticketData.tickets_by_category || {}),
+                            labels: Object.keys(concerns),
                             datasets: [{
-                                label: 'Tickets',
-                                data: Object.values(ticketData.tickets_by_category || {}),
-                                backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                                borderColor: '#667eea',
-                                borderWidth: 2,
+                                label: 'Number of Requests',
+                                data: Object.values(concerns),
+                                backgroundColor: [
+                                    'rgba(102, 126, 234, 0.8)',
+                                    'rgba(118, 75, 162, 0.8)',
+                                    'rgba(240, 147, 251, 0.8)',
+                                    'rgba(79, 172, 254, 0.8)',
+                                    'rgba(67, 233, 123, 0.8)'
+                                ],
+                                borderWidth: 0,
                                 borderRadius: 6
                             }]
                         },
@@ -746,7 +804,7 @@
                             scales: {
                                 y: {
                                     beginAtZero: true,
-                                    ticks: { stepSize: 1 }
+                                    ticks: { stepSize: 2 }
                                 }
                             }
                         }
@@ -978,8 +1036,13 @@ Please write a helpful, professional response addressing their concern.`,
                                 </div>
 
                                 <div className="chart-container">
-                                    <h3>🎫 Tickets by Category</h3>
-                                    <canvas ref={ticketChartRef}></canvas>
+                                    <h3>🤖 AI vs Manual Responses</h3>
+                                    <canvas ref={aiChartRef}></canvas>
+                                </div>
+
+                                <div className="chart-container">
+                                    <h3>📈 Top Employee Concerns</h3>
+                                    <canvas ref={concernsChartRef}></canvas>
                                 </div>
                             </div>
                         </>
