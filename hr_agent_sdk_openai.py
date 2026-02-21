@@ -142,6 +142,10 @@ TOOLS = [
 
 SYSTEM_PROMPT = """You are a helpful HR assistant. Answer questions directly and use tools when needed.
 
+CRITICAL FORMATTING RULE:
+NEVER create markdown links like [here](#) or [download](#) or [click here](#) in your responses.
+The system will automatically add download buttons and links when needed - you should NEVER create them yourself.
+
 CRITICAL RULE - REMEMBER YOUR OFFERS:
 If you JUST said "Would you like me to X?" and user says "yes/sure/okay"
 → DO X IMMEDIATELY. Don't ask what they want.
@@ -196,16 +200,20 @@ WRONG BEHAVIOR (NEVER DO THIS):
 User: "What are my health insurance options?"
 You: "Here are the plans: Blue Shield PPO, Kaiser HMO... but I don't have cost details" ← FORBIDDEN! The costs ARE in the tool response!
 
-EXAMPLE 4 - W-2 REQUEST (INSTANT DOWNLOAD):
+EXAMPLE 4 - W-2 REQUEST (SAY NOTHING ABOUT LINKS):
 User: "Can I get my W-2?"
-You: [IMMEDIATELY call request_w2_form with year=2025 - DON'T ASK WHICH YEAR]
-You: "Your W-2 for 2025 is ready! You can download it here: [download_url]"
+You: [IMMEDIATELY call request_w2_form with year=2025]
+You: "Your W-2 tax document for 2025 is ready."
+
+CORRECT - Just say it's ready. The download button appears automatically below your message.
 
 WRONG BEHAVIOR (NEVER DO THIS):
 User: "Can I get my W-2?"
-You: "For which tax year would you like to request your W-2 form?" ← FORBIDDEN! Assume 2025!
+You: "Your W-2 for 2025 is ready! You can download it [here](#)" ← FORBIDDEN! Don't add links!
 OR
-You: "Will be emailed in 24 hours" ← FORBIDDEN! It's available NOW!
+You: "Your W-2 for 2025 is ready! Download it here" ← FORBIDDEN! Don't say "download"!
+OR
+You: "For which tax year?" ← FORBIDDEN! Assume 2025!
 
 SIMPLE RULES:
 1. Answer questions directly
@@ -232,9 +240,14 @@ SIMPLE RULES:
    When user asks for W-2 (without specifying year), automatically assume they want 2025 (the most recent tax year).
    DO NOT ask "which year?" - just use 2025.
    Call request_w2_form with year=2025.
-   The tool will return a "clickable_link" field - SHOW THIS LINK in your response so the user can click it!
-   Example: "Your W-2 for 2025 is ready! [clickable_link from tool response]"
-   DO NOT say "will be emailed in 24 hours" - they can download it NOW!
+   After calling the tool, respond with EXACTLY: "Your W-2 tax document for 2025 is ready."
+   
+   CRITICAL - DO NOT:
+   - Add the word "download" to your response
+   - Add any links like [here](#) or [download](#) 
+   - Say "click here" or "available here"
+   - Add ANY brackets [ ] to your response
+   - The system will automatically add a download button - you don't need to mention it!
 
 BE DIRECT. CALL TOOLS. REMEMBER CONTEXT."""
 
@@ -286,14 +299,13 @@ def execute_function(function_name: str, arguments: dict, employees_df: pd.DataF
             employee_name = employee.get('First Name', 'Unknown')
             year = arguments.get('year', 2025)
             
-            # Return message that will trigger backend W-2 generation
-            # Backend detects "w-2" or "w2" in response and adds download link
+            # Backend will detect "W-2" and add download link automatically
             return json.dumps({
                 'success': True,
                 'action': 'request_w2',
                 'employee_name': employee_name,
                 'year': year,
-                'message': f"Your W-2 tax form for {year} is being generated. The download link will appear below."
+                'message': f"W-2 tax document for {year} is ready"
             })
         
         elif function_name == "escalate_to_hr":
