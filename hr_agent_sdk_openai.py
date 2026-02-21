@@ -1,5 +1,5 @@
 """
-HR Agent - STANDARD OPENAI FUNCTION CALLING (SYNTAX FIXED)
+HR Agent - STANDARD OPENAI FUNCTION CALLING
 ==========================================================
 """
 
@@ -196,6 +196,17 @@ WRONG BEHAVIOR (NEVER DO THIS):
 User: "What are my health insurance options?"
 You: "Here are the plans: Blue Shield PPO, Kaiser HMO... but I don't have cost details" ← FORBIDDEN! The costs ARE in the tool response!
 
+EXAMPLE 4 - W-2 REQUEST (INSTANT DOWNLOAD):
+User: "Can I get my W-2?"
+You: [IMMEDIATELY call request_w2_form with year=2025 - DON'T ASK WHICH YEAR]
+You: "Your W-2 for 2025 is ready! You can download it here: [download_url]"
+
+WRONG BEHAVIOR (NEVER DO THIS):
+User: "Can I get my W-2?"
+You: "For which tax year would you like to request your W-2 form?" ← FORBIDDEN! Assume 2025!
+OR
+You: "Will be emailed in 24 hours" ← FORBIDDEN! It's available NOW!
+
 SIMPLE RULES:
 1. Answer questions directly
 2. Use tools to get data (salary, PTO, health plans, W-2)
@@ -216,6 +227,13 @@ SIMPLE RULES:
    - **How to enroll/change:** Can enroll or change contribution anytime through payroll
    
    Answer ONLY what they ask about. Don't dump all info at once.
+
+8. **W-2 TAX FORMS - INSTANT ACCESS:**
+   When user asks for W-2 (without specifying year), automatically assume they want 2025 (the most recent tax year).
+   DO NOT ask "which year?" - just use 2025.
+   Call request_w2_form with year=2025.
+   The tool will return a download link - show it immediately so they can download NOW.
+   DO NOT say "will be emailed in 24 hours" - they can download it instantly!
 
 BE DIRECT. CALL TOOLS. REMEMBER CONTEXT."""
 
@@ -265,15 +283,18 @@ def execute_function(function_name: str, arguments: dict, employees_df: pd.DataF
                 return json.dumps({'success': False, 'error': 'Employee not found'})
             
             employee_name = employee.get('First Name', 'Unknown')
-            year = arguments.get('year', 2025)
+            year = arguments.get('year', 2025)  # Default to 2025 if not specified
+            
+            # Generate download URL
+            download_url = f"https://hr-agent-tbd8.onrender.com/api/w2/{arguments['employee_id']}/{year}"
             
             return json.dumps({
                 'success': True,
                 'action': 'request_w2',
                 'employee_name': employee_name,
                 'year': year,
-                'message': f"W-2 form for {year} will be generated and emailed to you within 24 hours.",
-                'pdf_url': f"/api/w2/{arguments['employee_id']}/{year}"
+                'download_url': download_url,
+                'message': f"Your W-2 for {year} is ready! Click the link below to download it now."
             })
         
         elif function_name == "escalate_to_hr":
