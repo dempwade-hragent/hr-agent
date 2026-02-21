@@ -1,5 +1,5 @@
 """
-HR Agent - STANDARD OPENAI FUNCTION CALLING
+HR Agent - STANDARD OPENAI FUNCTION CALLING 
 ==========================================================
 """
 
@@ -232,8 +232,9 @@ SIMPLE RULES:
    When user asks for W-2 (without specifying year), automatically assume they want 2025 (the most recent tax year).
    DO NOT ask "which year?" - just use 2025.
    Call request_w2_form with year=2025.
-   The tool will return a download link - show it immediately so they can download NOW.
-   DO NOT say "will be emailed in 24 hours" - they can download it instantly!
+   The tool will return a "clickable_link" field - SHOW THIS LINK in your response so the user can click it!
+   Example: "Your W-2 for 2025 is ready! [clickable_link from tool response]"
+   DO NOT say "will be emailed in 24 hours" - they can download it NOW!
 
 BE DIRECT. CALL TOOLS. REMEMBER CONTEXT."""
 
@@ -283,18 +284,16 @@ def execute_function(function_name: str, arguments: dict, employees_df: pd.DataF
                 return json.dumps({'success': False, 'error': 'Employee not found'})
             
             employee_name = employee.get('First Name', 'Unknown')
-            year = arguments.get('year', 2025)  # Default to 2025 if not specified
+            year = arguments.get('year', 2025)
             
-            # Generate download URL
-            download_url = f"https://hr-agent-tbd8.onrender.com/api/w2/{arguments['employee_id']}/{year}"
-            
+            # Return message that will trigger backend W-2 generation
+            # Backend detects "w-2" or "w2" in response and adds download link
             return json.dumps({
                 'success': True,
                 'action': 'request_w2',
                 'employee_name': employee_name,
                 'year': year,
-                'download_url': download_url,
-                'message': f"Your W-2 for {year} is ready! Click the link below to download it now."
+                'message': f"Your W-2 tax form for {year} is being generated. The download link will appear below."
             })
         
         elif function_name == "escalate_to_hr":
