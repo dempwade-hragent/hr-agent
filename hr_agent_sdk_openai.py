@@ -1,7 +1,6 @@
 """
-HR Agent - STANDARD OPENAI FUNCTION CALLING
-==========================================
-No SDK - just standard OpenAI API 
+HR Agent - STANDARD OPENAI FUNCTION CALLING (SYNTAX FIXED)
+==========================================================
 """
 
 from openai import OpenAI
@@ -74,6 +73,21 @@ TOOLS = [
                 "type": "object",
                 "properties": {},
                 "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "request_w2_form",
+            "description": "Request W-2 tax form for the employee",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "employee_id": {"type": "string", "description": "Employee ID or first name"},
+                    "year": {"type": "integer", "description": "Tax year (e.g., 2025)"}
+                },
+                "required": ["employee_id", "year"]
             }
         }
     },
@@ -159,7 +173,7 @@ You: "What would you like to enroll in?" ← FORBIDDEN! You were JUST talking ab
 
 SIMPLE RULES:
 1. Answer questions directly
-2. Use tools to get data (salary, PTO, health plans)
+2. Use tools to get data (salary, PTO, health plans, W-2)
 3. When user wants to DO something (enroll, take PTO, etc.), use email_manager or escalate_to_hr
 4. Always show the email_draft from tool responses
 5. When user says "yes" to your offer, DO IT - don't ask again
@@ -172,7 +186,7 @@ BE DIRECT. CALL TOOLS. REMEMBER CONTEXT."""
 # ================================================================
 
 def execute_function(function_name: str, arguments: dict, employees_df: pd.DataFrame, health_plans_df: pd.DataFrame) -> str:
-    """Execute a function call and return the result - ALWAYS returns a valid JSON response"""
+    """Execute a function call and return the result - ALWAYS returns valid JSON"""
     
     print(f"\n🔧 EXECUTING: {function_name}({arguments})")
     
@@ -193,7 +207,6 @@ def execute_function(function_name: str, arguments: dict, employees_df: pd.DataF
         elif function_name == "get_health_insurance_plans":
             plans = []
             for _, plan in health_plans_df.iterrows():
-                # Use .get() to safely access columns that might not exist
                 plans.append({
                     'name': plan.get('Plan Name', plan.get('plan_name', 'Unknown')),
                     'type': plan.get('Plan Type', plan.get('plan_type', 'Unknown')),
@@ -202,16 +215,33 @@ def execute_function(function_name: str, arguments: dict, employees_df: pd.DataF
                     'deductible': plan.get('Deductible', plan.get('deductible', 'Unknown'))
                 })
             return json.dumps({'success': True, 'plans': plans})
-    
-    elif function_name == "escalate_to_hr":
-        employee = find_employee(employees_df, arguments['employee_id'])
-        name = 'Unknown Employee'
-        emp_id_display = arguments['employee_id']
-        if employee is not None:
-            name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
-            emp_id_display = employee.get('Employee ID', arguments['employee_id'])
         
-        email_body = f"""Dear HR Team,
+        elif function_name == "request_w2_form":
+            employee = find_employee(employees_df, arguments['employee_id'])
+            if employee is None:
+                return json.dumps({'success': False, 'error': 'Employee not found'})
+            
+            employee_name = employee.get('First Name', 'Unknown')
+            year = arguments.get('year', 2025)
+            
+            return json.dumps({
+                'success': True,
+                'action': 'request_w2',
+                'employee_name': employee_name,
+                'year': year,
+                'message': f"W-2 form for {year} will be generated and emailed to you within 24 hours.",
+                'pdf_url': f"/api/w2/{arguments['employee_id']}/{year}"
+            })
+        
+        elif function_name == "escalate_to_hr":
+            employee = find_employee(employees_df, arguments['employee_id'])
+            name = 'Unknown Employee'
+            emp_id_display = arguments['employee_id']
+            if employee is not None:
+                name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+                emp_id_display = employee.get('Employee ID', arguments['employee_id'])
+            
+            email_body = f"""Dear HR Team,
 
 Employee: {name} (ID: {emp_id_display})
 Subject: {arguments['subject']}
@@ -223,27 +253,27 @@ This request has been escalated for your review and assistance.
 
 Best regards,
 HR Assistant Bot"""
+            
+            return json.dumps({
+                'success': True,
+                'action': 'escalate_to_hr',
+                'employee_id': arguments['employee_id'],
+                'name': name,
+                'subject': arguments['subject'],
+                'reason': arguments['reason'],
+                'email_draft': email_body,
+                'recipient': 'hr@company.com'
+            })
         
-        return json.dumps({
-            'success': True,
-            'action': 'escalate_to_hr',
-            'employee_id': arguments['employee_id'],
-            'name': name,
-            'subject': arguments['subject'],
-            'reason': arguments['reason'],
-            'email_draft': email_body,
-            'recipient': 'hr@company.com'
-        })
-    
-    elif function_name == "email_manager":
-        employee = find_employee(employees_df, arguments['employee_id'])
-        if employee is None:
-            return json.dumps({'success': False, 'error': 'Employee not found'})
-        
-        employee_name = employee.get('First Name', 'Unknown')
-        manager_name = employee.get('Manager', 'Your Manager')
-        
-        email_body = f"""To: {manager_name}
+        elif function_name == "email_manager":
+            employee = find_employee(employees_df, arguments['employee_id'])
+            if employee is None:
+                return json.dumps({'success': False, 'error': 'Employee not found'})
+            
+            employee_name = employee.get('First Name', 'Unknown')
+            manager_name = employee.get('Manager', 'Your Manager')
+            
+            email_body = f"""To: {manager_name}
 From: {employee_name}
 Subject: {arguments['subject']}
 
@@ -251,25 +281,25 @@ Subject: {arguments['subject']}
 
 Best regards,
 {employee_name}"""
+            
+            return json.dumps({
+                'success': True,
+                'action': 'email_manager',
+                'employee_name': employee_name,
+                'manager_name': manager_name,
+                'subject': arguments['subject'],
+                'email_draft': email_body
+            })
         
-        return json.dumps({
-            'success': True,
-            'action': 'email_manager',
-            'employee_name': employee_name,
-            'manager_name': manager_name,
-            'subject': arguments['subject'],
-            'email_draft': email_body
-        })
-    
-    elif function_name == "schedule_hr_meeting":
-        employee = find_employee(employees_df, arguments['employee_id'])
-        name = 'Unknown Employee'
-        emp_id_display = arguments['employee_id']
-        if employee is not None:
-            name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
-            emp_id_display = employee.get('Employee ID', arguments['employee_id'])
-        
-        email_body = f"""Dear HR Team,
+        elif function_name == "schedule_hr_meeting":
+            employee = find_employee(employees_df, arguments['employee_id'])
+            name = 'Unknown Employee'
+            emp_id_display = arguments['employee_id']
+            if employee is not None:
+                name = employee.get('First Name', employee.get('Employee Name', 'Unknown'))
+                emp_id_display = employee.get('Employee ID', arguments['employee_id'])
+            
+            email_body = f"""Dear HR Team,
 
 MEETING REQUEST
 Employee: {name} (ID: {emp_id_display})
@@ -281,27 +311,24 @@ Please send a calendar invitation to schedule a meeting time with this employee.
 
 Best regards,
 HR Assistant Bot"""
+            
+            return json.dumps({
+                'success': True,
+                'action': 'schedule_hr_meeting',
+                'employee_id': arguments['employee_id'],
+                'name': name,
+                'reason': arguments['reason'],
+                'email_draft': email_body
+            })
         
-        return json.dumps({
-            'success': True,
-            'action': 'schedule_hr_meeting',
-            'employee_id': arguments['employee_id'],
-            'name': name,
-            'reason': arguments['reason'],
-            'email_draft': email_body
-        })
-        
-        return json.dumps({'success': False, 'error': 'Unknown function'})
+        else:
+            return json.dumps({'success': False, 'error': 'Unknown function'})
     
     except Exception as e:
-        # CRITICAL: Always return valid JSON, even on unexpected errors
-        print(f"❌ CRITICAL ERROR in execute_function: {function_name}, {e}")
+        print(f"❌ ERROR in execute_function: {function_name}, {e}")
         import traceback
         traceback.print_exc()
-        return json.dumps({
-            'success': False, 
-            'error': f'System error: {str(e)}'
-        })
+        return json.dumps({'success': False, 'error': f'System error: {str(e)}'})
 
 
 # ================================================================
@@ -323,7 +350,6 @@ class HRAgentSystem:
         conversation = self.employee_conversations[employee_id]
         conversation.append({'role': 'user', 'content': message})
         
-        # Keep last 20 messages
         if len(conversation) > 20:
             conversation = conversation[-20:]
             self.employee_conversations[employee_id] = conversation
@@ -333,20 +359,17 @@ class HRAgentSystem:
             print(f"EMPLOYEE: {employee_id}, MESSAGE: {message}")
             print(f"{'='*60}\n")
             
-            # IMPORTANT: Tell the AI who the employee is!
+            # Tell AI who the employee is
             system_prompt_with_context = f"""{SYSTEM_PROMPT}
 
 IMPORTANT CONTEXT:
 You are currently helping employee: {employee_id}
-When calling tools like get_pto_balance, get_employee_salary, etc., ALWAYS use "{employee_id}" as the employee_id parameter.
+When calling tools like get_pto_balance, get_employee_salary, request_w2_form, etc., ALWAYS use "{employee_id}" as the employee_id parameter.
 The user doesn't need to tell you their ID - you already know it's {employee_id}."""
             
-            # Call OpenAI with function calling
             response = client.chat.completions.create(
                 model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": system_prompt_with_context}
-                ] + conversation,
+                messages=[{"role": "system", "content": system_prompt_with_context}] + conversation,
                 tools=TOOLS,
                 tool_choice="auto"
             )
@@ -354,14 +377,12 @@ The user doesn't need to tell you their ID - you already know it's {employee_id}
             response_message = response.choices[0].message
             tool_calls = response_message.tool_calls
             
-            # If no tool calls, return the response
             if not tool_calls:
                 assistant_message = response_message.content
                 conversation.append({'role': 'assistant', 'content': assistant_message})
                 print(f"\n📤 RESPONSE: {assistant_message}\n")
                 return {'success': True, 'response': assistant_message}
             
-            # Handle tool calls
             conversation.append(response_message.model_dump())
             
             for tool_call in tool_calls:
@@ -376,7 +397,6 @@ The user doesn't need to tell you their ID - you already know it's {employee_id}
                         self.health_plans_df
                     )
                     
-                    # CRITICAL: ALWAYS add tool response to conversation
                     conversation.append({
                         'role': 'tool',
                         'tool_call_id': tool_call.id,
@@ -385,7 +405,6 @@ The user doesn't need to tell you their ID - you already know it's {employee_id}
                     })
                     
                 except Exception as e:
-                    # If ANY error occurs, still add a response to maintain conversation flow
                     print(f"❌ ERROR processing tool call: {e}")
                     conversation.append({
                         'role': 'tool',
@@ -394,12 +413,9 @@ The user doesn't need to tell you their ID - you already know it's {employee_id}
                         'content': json.dumps({'success': False, 'error': f'Tool execution failed: {str(e)}'})
                     })
             
-            # Get final response after tool calls
             final_response = client.chat.completions.create(
                 model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": system_prompt_with_context}
-                ] + conversation,
+                messages=[{"role": "system", "content": system_prompt_with_context}] + conversation,
                 tools=TOOLS,
                 tool_choice="auto"
             )
@@ -409,10 +425,7 @@ The user doesn't need to tell you their ID - you already know it's {employee_id}
             
             print(f"\n📤 FINAL RESPONSE: {assistant_message}\n")
             
-            return {
-                'success': True,
-                'response': assistant_message
-            }
+            return {'success': True, 'response': assistant_message}
             
         except Exception as e:
             import traceback
