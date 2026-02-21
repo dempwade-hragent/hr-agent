@@ -321,11 +321,19 @@ class HRAgentSystem:
             print(f"EMPLOYEE: {employee_id}, MESSAGE: {message}")
             print(f"{'='*60}\n")
             
+            # IMPORTANT: Tell the AI who the employee is!
+            system_prompt_with_context = f"""{SYSTEM_PROMPT}
+
+IMPORTANT CONTEXT:
+You are currently helping employee: {employee_id}
+When calling tools like get_pto_balance, get_employee_salary, etc., ALWAYS use "{employee_id}" as the employee_id parameter.
+The user doesn't need to tell you their ID - you already know it's {employee_id}."""
+            
             # Call OpenAI with function calling
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT}
+                    {"role": "system", "content": system_prompt_with_context}
                 ] + conversation,
                 tools=TOOLS,
                 tool_choice="auto"
@@ -366,7 +374,7 @@ class HRAgentSystem:
             final_response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT}
+                    {"role": "system", "content": system_prompt_with_context}
                 ] + conversation,
                 tools=TOOLS,
                 tool_choice="auto"
