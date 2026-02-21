@@ -5,7 +5,7 @@ Ultra-simple trigger-based instructions that actually work
 """
 
 from openai import OpenAI
-from openai.agents import Agent, function_tool, RunContextWrapper
+from agents import Agent, function_tool, RunContext
 import pandas as pd
 import json
 from typing import Optional
@@ -40,7 +40,7 @@ def find_employee(context: HRContext, employee_id: str) -> Optional[dict]:
 # ================================================================
 
 @function_tool
-def get_employee_salary(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+def get_employee_salary(ctx: RunContext[HRContext], employee_id: str) -> str:
     """Get employee salary"""
     print(f"🔧 TOOL CALLED: get_employee_salary({employee_id})")
     employee = find_employee(ctx.context, employee_id)
@@ -55,7 +55,7 @@ def get_employee_salary(ctx: RunContextWrapper[HRContext], employee_id: str) -> 
 
 
 @function_tool
-def get_pto_balance(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
+def get_pto_balance(ctx: RunContext[HRContext], employee_id: str) -> str:
     """Get PTO balance"""
     print(f"🔧 TOOL CALLED: get_pto_balance({employee_id})")
     employee = find_employee(ctx.context, employee_id)
@@ -72,7 +72,7 @@ def get_pto_balance(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
 
 
 @function_tool
-def get_health_insurance_plans(ctx: RunContextWrapper[HRContext]) -> str:
+def get_health_insurance_plans(ctx: RunContext[HRContext]) -> str:
     """Get available health insurance plans"""
     print(f"🔧 TOOL CALLED: get_health_insurance_plans()")
     
@@ -90,7 +90,7 @@ def get_health_insurance_plans(ctx: RunContextWrapper[HRContext]) -> str:
 
 
 @function_tool
-def escalate_to_hr(ctx: RunContextWrapper[HRContext], employee_id: str, subject: str, reason: str) -> str:
+def escalate_to_hr(ctx: RunContext[HRContext], employee_id: str, subject: str, reason: str) -> str:
     """Escalate request to HR"""
     print(f"🚨 TOOL CALLED: escalate_to_hr({employee_id}, {subject})")
     
@@ -128,7 +128,7 @@ HR Assistant Bot"""
 
 
 @function_tool
-def email_manager(ctx: RunContextWrapper[HRContext], employee_id: str, subject: str, message: str) -> str:
+def email_manager(ctx: RunContext[HRContext], employee_id: str, subject: str, message: str) -> str:
     """Draft email to employee's manager"""
     print(f"📧 TOOL CALLED: email_manager({employee_id}, {subject})")
     
@@ -160,7 +160,7 @@ Best regards,
 
 
 @function_tool
-def schedule_hr_meeting(ctx: RunContextWrapper[HRContext], employee_id: str, reason: str) -> str:
+def schedule_hr_meeting(ctx: RunContext[HRContext], employee_id: str, reason: str) -> str:
     """Schedule meeting with HR"""
     print(f"📅 TOOL CALLED: schedule_hr_meeting({employee_id})")
     
