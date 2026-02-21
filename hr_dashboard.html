@@ -78,6 +78,11 @@
             border-color: #632CA6;
         }
 
+        textarea:focus {
+            outline: none;
+            border-color: #632CA6 !important;
+        }
+
         .btn-primary {
             width: 100%;
             padding: 14px;
@@ -502,6 +507,11 @@
             background: #e0e0e0;
         }
 
+        .btn-ai-draft:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
         .btn-success {
             padding: 10px 20px;
             background: #4caf50;
@@ -574,6 +584,9 @@
             const [ticketData, setTicketData] = useState(null);
             const [emailsData, setEmailsData] = useState(null);
             const [selectedEmail, setSelectedEmail] = useState(null);
+            const [showReplyModal, setShowReplyModal] = useState(false);
+            const [replyText, setReplyText] = useState('');
+            const [isAIDrafting, setIsAIDrafting] = useState(false);
             
             // Filter states
             const [statusFilter, setStatusFilter] = useState('all');
@@ -756,8 +769,72 @@
             };
 
             const handleReply = (email) => {
-                setSuccessMessage(`Reply drafted to ${email['Employee Name']}`);
-                setTimeout(() => setSuccessMessage(''), 3000);
+                setShowReplyModal(true);
+                setReplyText(''); // Clear any previous reply
+            };
+
+            const handleAIDraft = async (email) => {
+                setIsAIDrafting(true);
+                try {
+                    const response = await fetch('https://hr-agent-tbd8.onrender.com/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: `Draft a professional HR response to this employee email:
+
+From: ${email['Employee Name']}
+Subject: ${email.Subject}
+Category: ${email.Category}
+Message: ${email.Message}
+
+Please write a helpful, professional response addressing their concern.`,
+                            employee_id: 'hr_manager',
+                            first_name: 'HR'
+                        }),
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        setReplyText(data.response);
+                    } else {
+                        alert('Failed to generate AI draft. Please write manually.');
+                    }
+                } catch (error) {
+                    console.error('AI draft error:', error);
+                    alert('Failed to generate AI draft. Please write manually.');
+                } finally {
+                    setIsAIDrafting(false);
+                }
+            };
+
+            const handleSendReply = (email) => {
+                // Send the reply (in production this would call an API)
+                console.log('Sending reply to:', email.Email);
+                console.log('Reply text:', replyText);
+                
+                // Update email status to resolved
+                const updatedEmails = emailsData.emails.map(e => 
+                    e === email ? {...e, Status: 'Resolved'} : e
+                );
+                setEmailsData({
+                    ...emailsData,
+                    emails: updatedEmails,
+                    summary: {
+                        ...emailsData.summary,
+                        pending: Math.max(0, emailsData.summary.pending - 1)
+                    }
+                });
+                
+                // Close modals
+                setShowReplyModal(false);
+                setSelectedEmail(null);
+                setReplyText('');
+                
+                setSuccessMessage(`Reply sent to ${email['Employee Name']} and email marked as resolved`);
+                setTimeout(() => setSuccessMessage(''), 4000);
             };
 
             const handleResolve = (email) => {
@@ -989,7 +1066,7 @@
                     )}
 
                     {/* Email Detail Modal */}
-                    {selectedEmail && (
+                    {selectedEmail && !showReplyModal && (
                         <div className="modal-overlay" onClick={() => setSelectedEmail(null)}>
                             <div className="modal" onClick={(e) => e.stopPropagation()}>
                                 <div className="modal-header">
@@ -1067,6 +1144,103 @@
                                             ✓ Mark as Resolved
                                         </button>
                                     )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Reply Compose Modal */}
+                    {selectedEmail && showReplyModal && (
+                        <div className="modal-overlay" onClick={() => setShowReplyModal(false)}>
+                            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h2>✉️ Compose Reply</h2>
+                                    <button className="close-btn" onClick={() => setShowReplyModal(false)}>
+                                        ×
+                                    </button>
+                                </div>
+                                <div className="modal-body">
+                                    <div className="email-detail-row">
+                                        <label>To</label>
+                                        <div className="value">
+                                            {selectedEmail['Employee Name']} &lt;{selectedEmail.Email}&gt;
+                                        </div>
+                                    </div>
+                                    <div className="email-detail-row">
+                                        <label>Subject</label>
+                                        <div className="value">Re: {selectedEmail.Subject}</div>
+                                    </div>
+                                    <div className="email-detail-row">
+                                        <label>Your Response</label>
+                                        <textarea
+                                            style={{
+                                                width: '100%',
+                                                minHeight: '200px',
+                                                padding: '15px',
+                                                border: '2px solid #e0e0e0',
+                                                borderRadius: '8px',
+                                                fontSize: '14px',
+                                                fontFamily: 'inherit',
+                                                resize: 'vertical',
+                                                opacity: isAIDrafting ? 0.6 : 1
+                                            }}
+                                            placeholder={isAIDrafting ? "✨ AI is drafting your response..." : "Type your reply here, or click 'Draft with AI' for help..."}
+                                            value={replyText}
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            disabled={isAIDrafting}
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="email-detail-row" style={{fontSize: '13px', color: '#666'}}>
+                                        <strong>Original Message:</strong>
+                                        <div style={{marginTop: '8px', padding: '12px', background: '#f9f9f9', borderRadius: '6px', fontSize: '13px'}}>
+                                            <div style={{marginBottom: '6px'}}>
+                                                <strong>From:</strong> {selectedEmail['Employee Name']} &lt;{selectedEmail.Email}&gt;
+                                            </div>
+                                            <div style={{marginBottom: '6px'}}>
+                                                <strong>Date:</strong> {new Date(selectedEmail['Date Received']).toLocaleString()}
+                                            </div>
+                                            <div style={{marginBottom: '6px'}}>
+                                                <strong>Subject:</strong> {selectedEmail.Subject}
+                                            </div>
+                                            <div style={{marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #ddd'}}>
+                                                {selectedEmail.Message}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="modal-actions">
+                                    <button 
+                                        className="btn-secondary" 
+                                        onClick={() => setShowReplyModal(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        className="btn-ai-draft" 
+                                        onClick={() => handleAIDraft(selectedEmail)}
+                                        disabled={isAIDrafting}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                            color: 'white',
+                                            padding: '12px 24px',
+                                            borderRadius: '8px',
+                                            border: 'none',
+                                            fontWeight: '600',
+                                            cursor: isAIDrafting ? 'not-allowed' : 'pointer',
+                                            opacity: isAIDrafting ? 0.6 : 1,
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {isAIDrafting ? '✨ Drafting...' : '✨ Draft with AI'}
+                                    </button>
+                                    <button 
+                                        className="btn-resolve" 
+                                        onClick={() => handleSendReply(selectedEmail)}
+                                        disabled={!replyText.trim()}
+                                    >
+                                        📤 Send Reply
+                                    </button>
                                 </div>
                             </div>
                         </div>
