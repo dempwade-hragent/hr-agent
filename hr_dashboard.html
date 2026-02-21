@@ -17,7 +17,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1E1438;
             min-height: 100vh;
             color: #333;
         }
@@ -598,14 +598,8 @@
             const emailChartInstance = useRef(null);
             const ticketChartInstance = useRef(null);
 
-            // Check localStorage for existing auth
-            useEffect(() => {
-                const auth = localStorage.getItem('hr_auth');
-                if (auth === 'true') {
-                    setIsAuthenticated(true);
-                    loadAllData();
-                }
-            }, []);
+            // Don't auto-login - always show login screen first
+            // (User can stay logged in during session, but must login on fresh page load)
 
             // Create charts when data loads
             useEffect(() => {
