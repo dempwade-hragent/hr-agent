@@ -866,7 +866,7 @@
                     if (data.success) {
                         return {
                             text: data.response,
-                            downloadUrl: data.download_url || null,
+                            downloadUrl: data.download_url || data.w2_download_url || null,
                             fileType: data.file_type || null,
                             showCalendar: data.response.startsWith('SCHEDULE_CALL_REQUEST:'),
                             pendingUpdate: data.pending_update || null,
