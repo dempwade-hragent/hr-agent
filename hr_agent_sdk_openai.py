@@ -172,34 +172,36 @@ BE DIRECT. CALL TOOLS. REMEMBER CONTEXT."""
 # ================================================================
 
 def execute_function(function_name: str, arguments: dict, employees_df: pd.DataFrame, health_plans_df: pd.DataFrame) -> str:
-    """Execute a function call and return the result"""
+    """Execute a function call and return the result - ALWAYS returns a valid JSON response"""
     
     print(f"\n🔧 EXECUTING: {function_name}({arguments})")
     
-    if function_name == "get_employee_salary":
-        employee = find_employee(employees_df, arguments['employee_id'])
-        if employee is None:
-            return json.dumps({'success': False, 'error': 'Employee not found'})
-        return json.dumps({'success': True, 'salary': employee.get('Salary', 'Unknown')})
-    
-    elif function_name == "get_pto_balance":
-        employee = find_employee(employees_df, arguments['employee_id'])
-        if employee is None:
-            return json.dumps({'success': False, 'error': 'Employee not found'})
-        pto_column = 'Days Off Remaining' if 'Days Off Remaining' in employees_df.columns else 'Days Off'
-        return json.dumps({'success': True, 'pto_remaining': employee.get(pto_column, 'Unknown')})
-    
-    elif function_name == "get_health_insurance_plans":
-        plans = []
-        for _, plan in health_plans_df.iterrows():
-            plans.append({
-                'name': plan['Plan Name'],
-                'type': plan['Plan Type'],
-                'employee_cost': plan['Employee Monthly Cost'],
-                'family_cost': plan['Family Monthly Cost'],
-                'deductible': plan['Deductible']
-            })
-        return json.dumps({'success': True, 'plans': plans})
+    try:
+        if function_name == "get_employee_salary":
+            employee = find_employee(employees_df, arguments['employee_id'])
+            if employee is None:
+                return json.dumps({'success': False, 'error': 'Employee not found'})
+            return json.dumps({'success': True, 'salary': employee.get('Salary', 'Unknown')})
+        
+        elif function_name == "get_pto_balance":
+            employee = find_employee(employees_df, arguments['employee_id'])
+            if employee is None:
+                return json.dumps({'success': False, 'error': 'Employee not found'})
+            pto_column = 'Days Off Remaining' if 'Days Off Remaining' in employees_df.columns else 'Days Off'
+            return json.dumps({'success': True, 'pto_remaining': employee.get(pto_column, 'Unknown')})
+        
+        elif function_name == "get_health_insurance_plans":
+            plans = []
+            for _, plan in health_plans_df.iterrows():
+                # Use .get() to safely access columns that might not exist
+                plans.append({
+                    'name': plan.get('Plan Name', plan.get('plan_name', 'Unknown')),
+                    'type': plan.get('Plan Type', plan.get('plan_type', 'Unknown')),
+                    'employee_cost': plan.get('Employee Monthly Cost', plan.get('employee_cost', plan.get('Employee Cost', 'Unknown'))),
+                    'family_cost': plan.get('Family Monthly Cost', plan.get('family_cost', plan.get('Family Cost', 'Unknown'))),
+                    'deductible': plan.get('Deductible', plan.get('deductible', 'Unknown'))
+                })
+            return json.dumps({'success': True, 'plans': plans})
     
     elif function_name == "escalate_to_hr":
         employee = find_employee(employees_df, arguments['employee_id'])
@@ -288,8 +290,18 @@ HR Assistant Bot"""
             'reason': arguments['reason'],
             'email_draft': email_body
         })
+        
+        return json.dumps({'success': False, 'error': 'Unknown function'})
     
-    return json.dumps({'success': False, 'error': 'Unknown function'})
+    except Exception as e:
+        # CRITICAL: Always return valid JSON, even on unexpected errors
+        print(f"❌ CRITICAL ERROR in execute_function: {function_name}, {e}")
+        import traceback
+        traceback.print_exc()
+        return json.dumps({
+            'success': False, 
+            'error': f'System error: {str(e)}'
+        })
 
 
 # ================================================================
@@ -353,22 +365,34 @@ The user doesn't need to tell you their ID - you already know it's {employee_id}
             conversation.append(response_message.model_dump())
             
             for tool_call in tool_calls:
-                function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
-                
-                function_response = execute_function(
-                    function_name,
-                    function_args,
-                    self.employees_df,
-                    self.health_plans_df
-                )
-                
-                conversation.append({
-                    'role': 'tool',
-                    'tool_call_id': tool_call.id,
-                    'name': function_name,
-                    'content': function_response
-                })
+                try:
+                    function_name = tool_call.function.name
+                    function_args = json.loads(tool_call.function.arguments)
+                    
+                    function_response = execute_function(
+                        function_name,
+                        function_args,
+                        self.employees_df,
+                        self.health_plans_df
+                    )
+                    
+                    # CRITICAL: ALWAYS add tool response to conversation
+                    conversation.append({
+                        'role': 'tool',
+                        'tool_call_id': tool_call.id,
+                        'name': function_name,
+                        'content': function_response
+                    })
+                    
+                except Exception as e:
+                    # If ANY error occurs, still add a response to maintain conversation flow
+                    print(f"❌ ERROR processing tool call: {e}")
+                    conversation.append({
+                        'role': 'tool',
+                        'tool_call_id': tool_call.id,
+                        'name': tool_call.function.name,
+                        'content': json.dumps({'success': False, 'error': f'Tool execution failed: {str(e)}'})
+                    })
             
             # Get final response after tool calls
             final_response = client.chat.completions.create(
