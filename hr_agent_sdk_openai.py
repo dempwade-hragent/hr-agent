@@ -1,11 +1,11 @@
 """
-HR Agent - FIXED VERSION
-========================
-Ultra-simple trigger-based instructions that actually work
+HR Agent - WORKING VERSION WITH SIMPLE INSTRUCTIONS
+===================================================
+Using original working imports, just simpler instructions
 """
 
 from openai import OpenAI
-from agents import Agent, function_tool
+from openai.agents import Agent, function_tool, RunContextWrapper
 import pandas as pd
 import json
 from typing import Optional
@@ -40,7 +40,7 @@ def find_employee(context: HRContext, employee_id: str) -> Optional[dict]:
 # ================================================================
 
 @function_tool
-def get_employee_salary(ctx, employee_id: str) -> str:
+def get_employee_salary(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
     """Get employee salary"""
     print(f"🔧 TOOL CALLED: get_employee_salary({employee_id})")
     employee = find_employee(ctx.context, employee_id)
@@ -55,7 +55,7 @@ def get_employee_salary(ctx, employee_id: str) -> str:
 
 
 @function_tool
-def get_pto_balance(ctx, employee_id: str) -> str:
+def get_pto_balance(ctx: RunContextWrapper[HRContext], employee_id: str) -> str:
     """Get PTO balance"""
     print(f"🔧 TOOL CALLED: get_pto_balance({employee_id})")
     employee = find_employee(ctx.context, employee_id)
@@ -72,7 +72,7 @@ def get_pto_balance(ctx, employee_id: str) -> str:
 
 
 @function_tool
-def get_health_insurance_plans(ctx) -> str:
+def get_health_insurance_plans(ctx: RunContextWrapper[HRContext]) -> str:
     """Get available health insurance plans"""
     print(f"🔧 TOOL CALLED: get_health_insurance_plans()")
     
@@ -90,8 +90,8 @@ def get_health_insurance_plans(ctx) -> str:
 
 
 @function_tool
-def escalate_to_hr(ctx, employee_id: str, subject: str, reason: str) -> str:
-    """Escalate request to HR"""
+def escalate_to_hr(ctx: RunContextWrapper[HRContext], employee_id: str, subject: str, reason: str) -> str:
+    """Escalate request to HR - use when employee wants to enroll, change benefits, get a raise, etc."""
     print(f"🚨 TOOL CALLED: escalate_to_hr({employee_id}, {subject})")
     
     employee = find_employee(ctx.context, employee_id)
@@ -128,8 +128,8 @@ HR Assistant Bot"""
 
 
 @function_tool
-def email_manager(ctx, employee_id: str, subject: str, message: str) -> str:
-    """Draft email to employee's manager"""
+def email_manager(ctx: RunContextWrapper[HRContext], employee_id: str, subject: str, message: str) -> str:
+    """Draft email to employee's manager - use for PTO requests, questions, etc."""
     print(f"📧 TOOL CALLED: email_manager({employee_id}, {subject})")
     
     employee = find_employee(ctx.context, employee_id)
@@ -160,7 +160,7 @@ Best regards,
 
 
 @function_tool
-def schedule_hr_meeting(ctx, employee_id: str, reason: str) -> str:
+def schedule_hr_meeting(ctx: RunContextWrapper[HRContext], employee_id: str, reason: str) -> str:
     """Schedule meeting with HR"""
     print(f"📅 TOOL CALLED: schedule_hr_meeting({employee_id})")
     
@@ -196,71 +196,39 @@ HR Assistant Bot"""
 
 
 # ================================================================
-# AGENT WITH ULTRA-SIMPLE INSTRUCTIONS
+# AGENT - ULTRA SIMPLE INSTRUCTIONS
 # ================================================================
 
 hr_agent = Agent(
     name="HR Assistant",
     model="gpt-4o",
-    instructions="""You are an HR assistant. Your job is to help employees with HR questions.
+    instructions="""You are a helpful HR assistant. Answer questions directly and use tools when needed.
 
-SUPER SIMPLE RULES - FOLLOW EXACTLY:
+SIMPLE RULES:
 
-1. WHEN USER ASKS ABOUT 401(k):
-   - First time: Say "Company offers 401(k) with matching. Would you like to enroll?"
-   - If they say YES/ENROLL/SIGN ME UP: Call escalate_to_hr with subject "401(k) Enrollment Request"
+1. When user asks "what are my 401k options?":
+   - Answer: "Company offers 401(k) with matching. Would you like to enroll?"
+   - If they say YES/ENROLL: Call escalate_to_hr with subject="401(k) Enrollment Request"
 
-2. WHEN USER ASKS ABOUT PTO FOR SPECIFIC DAY:
-   - First show PTO balance
-   - Then say: "I can email your manager to request approval. Would you like me to do that?"
-   - If they say YES: Call email_manager with PTO request details
+2. When user asks "can I take [day] off?":
+   - Call get_pto_balance first
+   - Then say: "You have X days. I can email your manager. Would you like that?"
+   - If they say YES: Call email_manager with the PTO request
 
-3. WHEN USER SAYS "YES" OR "SURE" OR "OKAY":
-   - Look at what you JUST offered in your previous message
-   - Do that thing immediately
-   - DO NOT ask "what do you want?" - you JUST told them what you can do
+3. When user says YES to something you offered:
+   - DO that thing immediately
+   - DON'T ask "what do you want?"
 
-4. KEYWORDS THAT TRIGGER TOOLS:
-   - "enroll" + "401k" context = Call escalate_to_hr for 401k enrollment
-   - "enroll" + "health" context = Call escalate_to_hr for health enrollment  
-   - "email manager" = Call email_manager
-   - "schedule meeting" = Call schedule_hr_meeting
-   - User says "yes" after you offered something = Do that thing
-
-5. AFTER CALLING A TOOL:
-   - The tool returns JSON with "email_draft"
-   - Extract the email_draft
+4. After calling escalate_to_hr or email_manager:
+   - Parse the JSON response
+   - Extract the "email_draft" field
    - Show it to the user
    - Ask "Would you like me to send this?"
 
-6. WHEN USER SAYS "SEND IT" OR "YES SEND IT":
-   - Say "Email sent to [recipient]. They'll follow up shortly."
-   - DO NOT ask which email
+5. When user says "send it":
+   - Say "Email sent. HR/Manager will follow up."
 
-EXAMPLES OF CORRECT BEHAVIOR:
-
-Example 1 - 401k:
-User: "What are my 401k options?"
-You: "Company offers 401(k) with matching. Would you like to enroll?"
-User: "yes"
-You: [Call escalate_to_hr NOW]
-You: "I've sent this to HR: [show email_draft]"
-
-Example 2 - PTO:
-User: "Can I take Monday off?"
-You: [Call get_pto_balance]
-You: "You have 13 days remaining. I can email your manager. Would you like me to do that?"
-User: "yes"
-You: [Call email_manager NOW]
-You: "Here's the draft: [show email_draft]"
-
-THINGS TO NEVER SAY:
-- "What would you like to enroll in?" (if you were just talking about 401k)
-- "What can I assist you with?" (if they just said yes to your offer)
-- "Could you clarify?" (if they said yes to something you offered)
-
-BE DIRECT. CALL TOOLS. SHOW EMAILS. GET IT DONE.
-""",
+BE DIRECT. CALL TOOLS. SHOW DRAFTS.""",
     tools=[
         get_employee_salary,
         get_pto_balance,
@@ -273,7 +241,7 @@ BE DIRECT. CALL TOOLS. SHOW EMAILS. GET IT DONE.
 
 
 # ================================================================
-# AGENT SYSTEM WITH CONVERSATION MEMORY
+# AGENT SYSTEM
 # ================================================================
 
 class HRAgentSystem:
@@ -285,53 +253,37 @@ class HRAgentSystem:
     async def chat(self, employee_id: str, message: str) -> dict:
         """Chat with the HR agent"""
         
-        # Initialize conversation history for this employee
         if employee_id not in self.employee_conversations:
             self.employee_conversations[employee_id] = []
         
         conversation = self.employee_conversations[employee_id]
+        conversation.append({'role': 'user', 'content': message})
         
-        # Add user message
-        conversation.append({
-            'role': 'user',
-            'content': message
-        })
-        
-        # Keep only last 20 messages to avoid huge context
         if len(conversation) > 20:
             conversation = conversation[-20:]
             self.employee_conversations[employee_id] = conversation
         
         try:
             print(f"\n{'='*60}")
-            print(f"EMPLOYEE: {employee_id}")
-            print(f"MESSAGE: {message}")
-            print(f"CONVERSATION HISTORY: {len(conversation)} messages")
+            print(f"EMPLOYEE: {employee_id}, MESSAGE: {message}")
             print(f"{'='*60}\n")
             
-            # Run the agent
             result = hr_agent.run(
                 context=self.context,
                 messages=conversation
             )
             
-            # Extract response
             response_text = ""
-            for message in result.messages:
-                if hasattr(message, 'content') and message.content:
-                    for content in message.content:
+            for msg in result.messages:
+                if hasattr(msg, 'content') and msg.content:
+                    for content in msg.content:
                         if hasattr(content, 'text'):
                             response_text += content.text + "\n"
             
             response_text = response_text.strip()
+            print(f"\n📤 RESPONSE: {response_text[:200]}...\n")
             
-            print(f"\n📤 RESPONSE: {response_text[:200]}...")
-            
-            # Add assistant response to conversation
-            conversation.append({
-                'role': 'assistant',
-                'content': response_text
-            })
+            conversation.append({'role': 'assistant', 'content': response_text})
             
             return {
                 'success': True,
@@ -340,11 +292,11 @@ class HRAgentSystem:
             
         except Exception as e:
             import traceback
-            print(f"\n❌ ERROR in chat:")
+            print(f"\n❌ ERROR:")
             print(traceback.format_exc())
             
             return {
                 'success': False,
-                'response': f"I apologize, but I encountered an error: {str(e)}",
+                'response': f"I apologize, but I encountered an issue: {str(e)}",
                 'error': str(e)
             }
