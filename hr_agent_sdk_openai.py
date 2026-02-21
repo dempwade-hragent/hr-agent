@@ -1,5 +1,5 @@
 """
-HR Agent - STANDARD OPENAI FUNCTION CALLING (SYNTAX FIXED)
+HR Agent - STANDARD OPENAI FUNCTION CALLING 
 ==========================================================
 """
 
@@ -171,12 +171,31 @@ WRONG BEHAVIOR (NEVER DO THIS):
 User: "Yes I'd like to enroll"
 You: "What would you like to enroll in?" ← FORBIDDEN! You were JUST talking about 401k!
 
+EXAMPLE 3 - HEALTH INSURANCE (SHOW ALL DETAILS):
+User: "What are my health insurance options?"
+You: [Call get_health_insurance_plans]
+You: "Here are your health insurance options:
+
+**Blue Shield PPO Gold**
+- Employee Cost: $250/month
+- Family Cost: $650/month
+- Deductible: $500 (individual), $1000 (family)
+- Out-of-Pocket Max: $3000 (individual), $6000 (family)
+- Coverage: Nationwide network, no referrals needed, covers 80% after deductible
+
+[Continue with other plans...]"
+
+WRONG BEHAVIOR (NEVER DO THIS):
+User: "What are my health insurance options?"
+You: "Here are the plans: Blue Shield PPO, Kaiser HMO... but I don't have cost details" ← FORBIDDEN! The costs ARE in the tool response!
+
 SIMPLE RULES:
 1. Answer questions directly
 2. Use tools to get data (salary, PTO, health plans, W-2)
 3. When user wants to DO something (enroll, take PTO, etc.), use email_manager or escalate_to_hr
 4. Always show the email_draft from tool responses
 5. When user says "yes" to your offer, DO IT - don't ask again
+6. **HEALTH INSURANCE:** When showing health insurance plans, ALWAYS include ALL details: name, type, employee cost, family cost, deductible, out-of-pocket max, and coverage details. NEVER say you don't have the information - it's in the tool response!
 
 BE DIRECT. CALL TOOLS. REMEMBER CONTEXT."""
 
@@ -208,11 +227,15 @@ def execute_function(function_name: str, arguments: dict, employees_df: pd.DataF
             plans = []
             for _, plan in health_plans_df.iterrows():
                 plans.append({
-                    'name': plan.get('Plan Name', plan.get('plan_name', 'Unknown')),
-                    'type': plan.get('Plan Type', plan.get('plan_type', 'Unknown')),
-                    'employee_cost': plan.get('Employee Monthly Cost', plan.get('employee_cost', plan.get('Employee Cost', 'Unknown'))),
-                    'family_cost': plan.get('Family Monthly Cost', plan.get('family_cost', plan.get('Family Cost', 'Unknown'))),
-                    'deductible': plan.get('Deductible', plan.get('deductible', 'Unknown'))
+                    'name': plan.get('Plan Name', 'Unknown'),
+                    'type': plan.get('Plan Type', 'Unknown'),
+                    'employee_cost': plan.get('Monthly Cost Employee', plan.get('Employee Monthly Cost', 'Unknown')),
+                    'family_cost': plan.get('Monthly Cost Family', plan.get('Family Monthly Cost', 'Unknown')),
+                    'deductible_individual': plan.get('Deductible Individual', plan.get('Deductible', 'Unknown')),
+                    'deductible_family': plan.get('Deductible Family', 'Unknown'),
+                    'oop_max_individual': plan.get('Out of Pocket Max Individual', 'Unknown'),
+                    'oop_max_family': plan.get('Out of Pocket Max Family', 'Unknown'),
+                    'coverage_details': plan.get('Coverage Details', 'Unknown')
                 })
             return json.dumps({'success': True, 'plans': plans})
         
