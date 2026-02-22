@@ -1,5 +1,5 @@
 """
-Backend.py - COMPLETE WORKING VERSION
+Backend.py
 ======================================
 OpenAI Agents SDK + Flask + Proper Session Management
 """
@@ -127,6 +127,30 @@ def ask_question():
         result = asyncio.run(hr_agent_system.chat(identifier, question))
         
         print(f"✅ Response: {result['response'][:100]}...")
+        
+        # Parse email draft from agent response if present
+        response_text = result.get('response', '')
+        
+        # Check if response contains an email draft
+        if ('email draft' in response_text.lower() or 'draft i prepared' in response_text.lower()):
+            # Try to extract email components using simple parsing
+            import re
+            
+            # Look for To:, Subject:, and message body patterns
+            to_match = re.search(r'To:\s*([^\n]+)', response_text)
+            subject_match = re.search(r'Subject:\s*([^\n]+)', response_text)
+            
+            # Extract the body (everything after Subject: until next section or end)
+            body_match = re.search(r'Subject:[^\n]+\n+(.*?)(?:\n\n---|\n\nBest regards|$)', response_text, re.DOTALL)
+            
+            if to_match and subject_match:
+                result['email_draft'] = {
+                    'to': to_match.group(1).strip(),
+                    'subject': subject_match.group(1).strip(),
+                    'body': body_match.group(1).strip() if body_match else ''
+                }
+                result['show_email_buttons'] = True
+                print(f"📧 Email draft detected and structured")
         
         # Check if this is a W-2 request
         response_lower = result.get('response', '').lower()
