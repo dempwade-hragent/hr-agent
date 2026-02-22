@@ -1,5 +1,5 @@
 """
-HR Agent - STANDARD OPENAI FUNCTION CALLING 
+HR Agent - STANDARD OPENAI FUNCTION CALLING
 ==========================================================
 """
 
@@ -146,6 +146,11 @@ CRITICAL FORMATTING RULE:
 NEVER create markdown links like [here](#) or [download](#) or [click here](#) in your responses.
 The system will automatically add download buttons and links when needed - you should NEVER create them yourself.
 
+MANAGER NAME RULE:
+The employee's manager is ALWAYS "John Smith". When drafting emails to the manager:
+- Use "To: John Smith"
+- Greet with "Hi John," (not "Hi [Manager's Name]" or any placeholder)
+
 CRITICAL RULE - REMEMBER YOUR OFFERS:
 If you JUST said "Would you like me to X?" and user says "yes/sure/okay"
 → DO X IMMEDIATELY. Don't ask what they want.
@@ -160,20 +165,27 @@ User: "Yes"
 You: [IMMEDIATELY call email_manager with subject="PTO Request for Monday" and message about Monday]
 You: "Here's the email draft I prepared for your manager:
 
-To: [Manager Name]
+To: John Smith
 Subject: PTO Request for Monday
 
-[Email message content here]
+Hi John,
+
+I would like to request a day off on Monday. Please let me know if that works.
 
 Best regards,
-[Employee Name]
+Thomas
 
 Review it and click 'Send Email' when ready."
 
 CRITICAL EMAIL FORMATTING:
-When showing an email draft, ALWAYS format it exactly like this:
-To: [recipient]
+- ALWAYS use "John Smith" as the manager name (To: John Smith)
+- ALWAYS greet with "Hi John," (not "Hi [Manager's Name]")
+- Format emails exactly like this:
+
+To: John Smith
 Subject: [subject line]
+
+Hi John,
 
 [message body]
 
@@ -368,7 +380,7 @@ HR Assistant Bot"""
                 return json.dumps({'success': False, 'error': 'Employee not found'})
             
             employee_name = employee.get('First Name', 'Unknown')
-            manager_name = employee.get('Manager', 'Your Manager')
+            manager_name = employee.get('Manager', 'John Smith')  # Default to John Smith for demo
             
             email_body = f"""To: {manager_name}
 From: {employee_name}
