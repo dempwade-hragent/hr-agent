@@ -230,6 +230,30 @@ def download_w2(employee_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/send-email-to-hr', methods=['POST', 'OPTIONS'])
+def send_email_to_hr():
+    """Handle email send confirmation (manager or HR)"""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    try:
+        # In a real system, this would send the actual email
+        # For demo purposes, we just return success
+        print("📧 Email send confirmed by user")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Email sent successfully!'
+        })
+    
+    except Exception as e:
+        print(f"Error in send email endpoint: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 # ================================================================
 # HR DASHBOARD ENDPOINTS
 # ================================================================
